@@ -114,17 +114,6 @@ h2 span { color: var(--cyan); }
   gap: 10px;
 }
 
-.nav-wordmark {
-  font-family: Georgia, serif;
-  font-size: 24px;
-  font-weight: 400;
-  color: var(--navy);
-  letter-spacing: 0.5px;
-}
-.nav-wordmark em {
-  color: var(--indigo);
-  font-style: normal;
-}
 
 .nav-links {
   display: flex;
