@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CT tamper-immunity surrogate – NyxX</title>
+  <link rel="stylesheet" href="case.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index.html">
+    <svg width="32" height="32" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="22" cy="22" r="20" stroke="#3f51b5" stroke-width="1.8" opacity="0.85"/>
+      <circle cx="22" cy="22" r="18.5" stroke="#1565c0" stroke-width="0.5" opacity="0.25"/>
+      <circle cx="30" cy="18" r="16" fill="#ffffff"/>
+      <circle cx="30" cy="18" r="16" stroke="#1565c0" stroke-width="0.8" opacity="0.35"/>
+      <polygon points="16,6 17.8,11.5 23,13.2 17.8,14.9 16,20.5 14.2,14.9 9,13.2 14.2,11.5" fill="#1a237e" opacity="0.8"/>
+    </svg>
+    <span class="nav-wordmark">Nyx<em>X</em></span>
+  </a>
+  <a class="nav-back" href="../index.html#case-studies">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#5c6bc0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    All case studies
+  </a>
+</nav>
+
+<header class="case-header">
+  <span class="case-tag" style="background:#fce4ec;color:#ad1457">EMC / Tamper Security · ML Surrogate</span>
+  <h1>Surrogate model for magnetic tamper-immunity of revenue-metering current transformers</h1>
+  <div class="case-meta">
+    <div class="meta-item">
+      <p class="meta-label">Tools</p>
+      <p class="meta-value">Closed-form magnetostatic model · FLAML AutoML</p>
+    </div>
+    <div class="meta-item">
+      <p class="meta-label">Domain</p>
+      <p class="meta-value">Power metering · EMC / security</p>
+    </div>
+    <div class="meta-item">
+      <p class="meta-label">Result</p>
+      <p class="meta-value">2.37% held-out surrogate error</p>
+    </div>
+  </div>
+</header>
+
+<main class="case-body">
+
+  <span class="case-badge">Independent R&D project — self-directed, not a client engagement</span>
+
+  <div class="metric-block">
+    <span class="metric-number">2.37%</span>
+    <span class="metric-label">held-out relative RMSE, 512-point Sobol DoE</span>
+  </div>
+
+  <h2>Background</h2>
+  <p>
+    Revenue-metering current transformers are a known fraud target: holding a strong permanent magnet against a CT can locally saturate its iron shielding and ferrite core, making the meter under-read. IEC 61869 defines accuracy classes, but doesn't directly answer, for a specific shield/core design, how close a magnet needs to get before the reading drifts outside that class. This project applies the same DoE-plus-surrogate approach as my <a href="meander-antenna.html">meander antenna project</a> to a very different physics domain — magnetostatic tamper security instead of RF.
+  </p>
+
+  <h2>Approach</h2>
+  <p>
+    I derived a real, disclosed 4-stage closed-form model: a two-charge-sheet block-magnet field (accurate at near-field distances, unlike a simpler point-dipole approximation) feeding a thin-shell iron shielding calculation applied through both an inner and outer iron layer, then generalized Fröhlich saturation with a tunable sharpness exponent, then a ratio-error term proportional to the resulting ferrite permeability collapse. I self-validated the physics chain before trusting any downstream fit — far field must give exactly 0% error, error must strictly decrease with magnet distance, a thicker shield must reduce error at fixed distance — then ran a 512-point scrambled-Sobol design of experiments across 7 parameters (6 shield/core/winding thicknesses plus magnet standoff distance, log-sampled so DoE density concentrates near the real transition zone). FLAML AutoML picked the winning model family (LightGBM), wrapped in a 25-member bootstrap ensemble for calibrated uncertainty.
+  </p>
+
+  <figure class="case-media">
+    <img src="../assets/cases/ct-tamper/explorer.png" alt="CT Tamper Immunity Surrogate GUI: shield/core thickness sliders, CT cross-section with approaching magnet, error-vs-distance curve, sensitivity ranking">
+    <figcaption>CT Tamper Immunity Surrogate — drag shield thicknesses or magnet standoff distance and see predicted tamper error against the declared accuracy class, live.</figcaption>
+  </figure>
+
+  <h2>Process</h2>
+  <p>
+    The calibration constants weren't taken from a datasheet in isolation. Magnet strength and saturation sharpness were jointly retuned against two real bench measurements (tamper onset around 21mm, near-full-distortion around 13mm) — the magnet's literal N45–N52 datasheet magnetization figure (1.1M A/m) produced a transition far too wide and too far out when used directly, so the effective calibrated value (18,000 A/m) is disclosed in the code as a fitted effective constant reproducing the observed near-field falloff, explicitly not a literal magnet property. The ensemble's uncertainty was checked against real held-out coverage rather than assumed: raw 1-sigma coverage measured 98.5% (badly over-confident), needing an aggressive calibration factor (0.29) to hit the true 68.27% target.
+  </p>
+
+  <h2>Results</h2>
+  <ul>
+    <li>Held-out relative RMSE of 2.37% (LightGBM, chosen by AutoML over competing model families).</li>
+    <li>A live desktop app lets you drag shield-layer thicknesses and magnet standoff distance and instantly see whether a design stays inside its declared IEC accuracy class under a tampering attempt — a study that would otherwise mean a Maxwell FEM solve per point.</li>
+    <li>Feature-importance ranking makes the shielding trade-off actionable: magnet standoff distance and inner/outer iron shield thickness dominate sensitivity, and the six shield layers matter more balanced together than any single one alone.</li>
+    <li>Disclosed model limitation: the shielding formula uses the standard infinite-cylinder approximation. The real CT is short and capped, so end leakage through the iron caps isn't captured — exactly what a full Ansys Maxwell model would add next.</li>
+  </ul>
+
+  <h2>Live demo</h2>
+  <p>
+    Screen recording of the packaged app: adjusting shield thicknesses and magnet standoff distance and watching the predicted tamper error respond in real time.
+  </p>
+  <figure class="case-media">
+    <video src="../assets/cases/ct-tamper/demo.mp4" controls preload="metadata" poster="../assets/cases/ct-tamper/explorer.png"></video>
+    <figcaption>CT Tamper Immunity Surrogate — live walkthrough</figcaption>
+  </figure>
+
+</main>
+
+<footer>
+  <span>© 2026 NyxX (Andreas Doukas s.p.) · Slovenia, EU</span>
+  <span>EM & thermal simulation consulting</span>
+</footer>
+
+</body>
+</html>

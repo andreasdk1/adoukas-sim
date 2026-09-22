@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rogowski coil tolerance surrogate – NyxX</title>
+  <link rel="stylesheet" href="case.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index.html">
+    <svg width="32" height="32" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="22" cy="22" r="20" stroke="#3f51b5" stroke-width="1.8" opacity="0.85"/>
+      <circle cx="22" cy="22" r="18.5" stroke="#1565c0" stroke-width="0.5" opacity="0.25"/>
+      <circle cx="30" cy="18" r="16" fill="#ffffff"/>
+      <circle cx="30" cy="18" r="16" stroke="#1565c0" stroke-width="0.8" opacity="0.35"/>
+      <polygon points="16,6 17.8,11.5 23,13.2 17.8,14.9 16,20.5 14.2,14.9 9,13.2 14.2,11.5" fill="#1a237e" opacity="0.8"/>
+    </svg>
+    <span class="nav-wordmark">Nyx<em>X</em></span>
+  </a>
+  <a class="nav-back" href="../index.html#case-studies">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#5c6bc0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    All case studies
+  </a>
+</nav>
+
+<header class="case-header">
+  <span class="case-tag" style="background:#e0f7fa;color:#00838f">Sensor Tolerancing · ML Surrogate</span>
+  <h1>Manufacturing-tolerance surrogate for Rogowski-coil current sensors</h1>
+  <div class="case-meta">
+    <div class="meta-item">
+      <p class="meta-label">Tools</p>
+      <p class="meta-value">Closed-form magnetostatic model · FLAML AutoML</p>
+    </div>
+    <div class="meta-item">
+      <p class="meta-label">Domain</p>
+      <p class="meta-value">Current sensing · power metering</p>
+    </div>
+    <div class="meta-item">
+      <p class="meta-label">Result</p>
+      <p class="meta-value">1.92% held-out surrogate error</p>
+    </div>
+  </div>
+</header>
+
+<main class="case-body">
+
+  <span class="case-badge">Independent R&D project — self-directed, not a client engagement</span>
+
+  <div class="metric-block">
+    <span class="metric-number">1.92%</span>
+    <span class="metric-label">held-out relative RMSE, 512-point Sobol DoE</span>
+  </div>
+
+  <h2>Background</h2>
+  <p>
+    A Rogowski coil's transfer function — its mutual inductance — depends on geometry that's never perfectly manufactured: mean coil radius, cross-section radius, winding uniformity, and how centered the primary conductor sits inside the coil. Tolerances on all of these shift the transfer function away from its nominal calibration, and IEC 61869-10 accuracy classes set how far that drift is allowed to go before units stop being interchangeable without individual recalibration. Exploring that 5-parameter tolerance space by hand, one field solve at a time, doesn't scale to a real Monte Carlo tolerance study — this project (built the same session as the <a href="ct-tamper.html">CT tamper-immunity project</a>, same architecture, different physics) was built to make that study interactive.
+  </p>
+
+  <h2>Approach</h2>
+  <p>
+    I implemented a real closed-form Rogowski magnetostatic model — 100 discrete turns, uniform-field-over-small-loop approximation, summed around the coil — and validated it against the textbook closed-form mutual-inductance formula before trusting it further. I ran a 512-point scrambled-Sobol design of experiments (445 train / 67 held-out validation), sampling the conductor offset on a disk rather than a box so every sample stays physically inside the coil's aperture, and let FLAML AutoML pick the winning model family (LightGBM again), wrapped in a 25-member calibrated bootstrap ensemble.
+  </p>
+
+  <figure class="case-media">
+    <img src="../assets/cases/rogowski-sensor/explorer.png" alt="Rogowski Coil Tolerance Surrogate GUI: tolerance sliders, top-view and 3D coil geometry, predicted transfer function, IEC accuracy-class gauge, sensitivity ranking">
+    <figcaption>Rogowski Coil Tolerance Surrogate — drag any tolerance parameter, or the conductor position directly on the coil cross-section, and see the predicted transfer function and accuracy-class verdict live.</figcaption>
+  </figure>
+
+  <h2>Process</h2>
+  <p>
+    The ensemble's uncertainty was checked against real held-out coverage rather than assumed correct: raw 1-sigma coverage measured 77.6%, corrected with a single calibration factor (0.79, chosen on validation data, not tuned against it) to hit the true 68.27% target. I also drew an explicit, disclosed framing distinction into the accuracy-class gauge itself: it checks geometric deviation from a shared nominal design, not whether a specific manufactured unit would fail inspection — real units are individually calibrated at production test, and conflating the two would make the tool say more than the physics supports.
+  </p>
+
+  <h2>Results</h2>
+  <ul>
+    <li>Held-out relative RMSE of 1.92% (LightGBM).</li>
+    <li>A live desktop app: drag any of the 5 tolerance parameters, or click-drag the conductor position directly on the coil cross-section, and see the predicted transfer function, its calibrated uncertainty, and whether the design stays inside a chosen IEC accuracy class — instantly, versus a full field solve per point.</li>
+    <li>Tolerance-sensitivity ranking (cross-section radius and mean coil radius dominate) is directly actionable for deciding which manufacturing tolerance to tighten first.</li>
+    <li>This project and its CT tamper-immunity sibling became the basis for a CADFEM World Conference 2026 talk — the same explorer screenshots and sensitivity charts were adapted directly into the presentation deck.</li>
+  </ul>
+
+  <h2>Live demo</h2>
+  <p>
+    Screen recording of the packaged app: dragging tolerance sliders and the conductor position, and watching the predicted transfer function and accuracy-class verdict respond in real time.
+  </p>
+  <figure class="case-media">
+    <video src="../assets/cases/rogowski-sensor/demo.mp4" controls preload="metadata" poster="../assets/cases/rogowski-sensor/explorer.png"></video>
+    <figcaption>Rogowski Coil Tolerance Surrogate — live walkthrough</figcaption>
+  </figure>
+
+</main>
+
+<footer>
+  <span>© 2026 NyxX (Andreas Doukas s.p.) · Slovenia, EU</span>
+  <span>EM & thermal simulation consulting</span>
+</footer>
+
+</body>
+</html>

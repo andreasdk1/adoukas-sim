@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meander antenna design surrogate – NyxX</title>
+  <link rel="stylesheet" href="case.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index.html">
+    <svg width="32" height="32" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="22" cy="22" r="20" stroke="#3f51b5" stroke-width="1.8" opacity="0.85"/>
+      <circle cx="22" cy="22" r="18.5" stroke="#1565c0" stroke-width="0.5" opacity="0.25"/>
+      <circle cx="30" cy="18" r="16" fill="#ffffff"/>
+      <circle cx="30" cy="18" r="16" stroke="#1565c0" stroke-width="0.8" opacity="0.35"/>
+      <polygon points="16,6 17.8,11.5 23,13.2 17.8,14.9 16,20.5 14.2,14.9 9,13.2 14.2,11.5" fill="#1a237e" opacity="0.8"/>
+    </svg>
+    <span class="nav-wordmark">Nyx<em>X</em></span>
+  </a>
+  <a class="nav-back" href="../index.html#case-studies">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#5c6bc0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    All case studies
+  </a>
+</nav>
+
+<header class="case-header">
+  <span class="case-tag" style="background:#e3f2fd;color:#1565c0">RF & Antenna · openEMS + ML</span>
+  <h1>Interactive surrogate model for meander-line PCB antenna design</h1>
+  <div class="case-meta">
+    <div class="meta-item">
+      <p class="meta-label">Tools</p>
+      <p class="meta-value">openEMS (FDTD) · Python · scikit-learn</p>
+    </div>
+    <div class="meta-item">
+      <p class="meta-label">Domain</p>
+      <p class="meta-value">RF & antenna design</p>
+    </div>
+    <div class="meta-item">
+      <p class="meta-label">Result</p>
+      <p class="meta-value">Live GUI replaces a per-point FDTD solve</p>
+    </div>
+  </div>
+</header>
+
+<main class="case-body">
+
+  <span class="case-badge">Independent R&D project — self-directed, not a client engagement</span>
+
+  <div class="metric-block">
+    <span class="metric-number">288</span>
+    <span class="metric-label">real FDTD solves behind an instant-feedback design GUI</span>
+  </div>
+
+  <h2>Background</h2>
+  <p>
+    Meander-line antennas pack a resonant length into a small PCB footprint by folding the trace back on itself, which is exactly what makes them hard to design by hand: the number of meander cells (N), trace width, and segment lengths all interact, and a small geometry change shifts resonant frequency and radiation efficiency substantially. Exploring that design space one full-wave solve at a time is slow — each openEMS FDTD run took roughly 90 seconds in this setup. I built this project to see whether a machine-learned surrogate, trained on a real design-of-experiments sweep rather than a rule of thumb, could stand in for the solver during interactive design exploration.
+  </p>
+
+  <h2>Approach</h2>
+  <p>
+    I wrote a parametric CSXCAD/openEMS geometry generator for meander antennas across N = 2–5 meander cells, and ran Sobol design-of-experiments sweeps inside a Dockerized openEMS 0.0.35 / CSXCAD build (openEMS has no native macOS support, so every solve runs containerized). That produced 72 real FDTD solves per N — 60 for training, 12 held out for validation, 288 solves in total. Each solve yields S11, resonant frequency, radiation efficiency, the full-band radiation pattern, and the frequency-domain near field, and each of those four outputs got its own fitted surrogate model, all wrapped behind a single desktop GUI.
+  </p>
+
+  <figure class="case-media">
+    <img src="../assets/cases/meander-antenna/explorer.png" alt="Meander Antenna Explorer GUI: 3D antenna render, geometry parameter sliders, live |S11| and radiation efficiency plots">
+    <figcaption>Meander Antenna Explorer — drag N, trace width, or segment lengths and the surrogate updates S11 and efficiency curves live, no solver call.</figcaption>
+  </figure>
+
+  <h2>Process</h2>
+  <p>
+    Before trusting any DoE data, I validated the FDTD setup itself with a mesh-convergence study — comparing 395,850, 1,351,814, and 7,365,600-cell meshes on the same geometry — and confirmed resonant frequency moved less than 1.3% between the two finest meshes before locking in the mesh settings used for the full sweep.
+  </p>
+
+  <figure class="case-media">
+    <img src="../assets/cases/meander-antenna/convergence.png" alt="Mesh convergence study: S11 curves and resonant frequency across three mesh refinement levels">
+    <figcaption>Mesh convergence check run before any design-of-experiments data was trusted — &lt;1.3% f_res movement between the two finest meshes.</figcaption>
+  </figure>
+  <p>
+    I also layered two materials-axis effects on top of the geometry surrogate, both fit from additional real solves rather than assumed from textbook formulas: substrate temperature (6 real temperature points) and substrate dielectric constant (24 real solves across 6 contrasting geometries). The dielectric sweep turned up a genuine physics finding: this antenna is roughly half as dielectric-sensitive as textbook microstrip theory predicts, and the sensitivity depends materially on N rather than trace width — so the correction model resolves per-N instead of using one blended curve.
+  </p>
+
+  <h2>Results</h2>
+  <ul>
+    <li>A packaged, signed desktop app turns a ~90-second FDTD solve into an instant, slider-driven prediction across S11, resonant frequency, efficiency, radiation pattern, and E-field.</li>
+    <li>Mesh convergence was verified before trusting the training data, not assumed — standard practice carried over from paid FEA work.</li>
+    <li>The app discloses its own accuracy gap rather than hiding it: held-out validation on N=3 currently shows 4.6% mean / 14.6% p95 error on resonant frequency, 5.1 dB on |S11|, and 7.1 points on radiation efficiency — short of the 2% / 2 dB / 3-point targets, because the DoE reached 72 points per N against an original 256-point target. The fix is more training data, not model tuning, and the app says so.</li>
+    <li>The dielectric-sensitivity finding above is a real, measured result, not a value assumed from theory.</li>
+  </ul>
+
+  <h2>Live demo</h2>
+  <p>
+    Screen recording of the packaged app: adjusting geometry sliders and watching the surrogate's S11, efficiency, and 3D geometry update in real time.
+  </p>
+  <figure class="case-media">
+    <video src="../assets/cases/meander-antenna/demo.mp4" controls preload="metadata" poster="../assets/cases/meander-antenna/explorer.png"></video>
+    <figcaption>Meander Antenna Explorer — live walkthrough</figcaption>
+  </figure>
+
+</main>
+
+<footer>
+  <span>© 2026 NyxX (Andreas Doukas s.p.) · Slovenia, EU</span>
+  <span>EM & thermal simulation consulting</span>
+</footer>
+
+</body>
+</html>
