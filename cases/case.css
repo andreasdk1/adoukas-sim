@@ -29,8 +29,6 @@ nav {
   height: var(--nav-h);
 }
 .nav-logo { display: flex; align-items: center; gap: 10px; }
-.nav-wordmark { font-family: Georgia, serif; font-size: 24px; font-weight: 400; color: var(--navy); letter-spacing: 0.5px; }
-.nav-wordmark em { color: var(--indigo); font-style: normal; }
 .nav-back { font-size: 13px; color: var(--indigo-l); display: flex; align-items: center; gap: 6px; transition: color 0.15s; }
 .nav-back:hover { color: var(--navy); }
 .nav-back svg { opacity: 0.6; }
@@ -114,19 +112,6 @@ nav {
   letter-spacing: 0.3px;
   margin-top: 10px;
   text-align: center;
-}
-
-/* Project badge — distinguishes self-directed builds from client engagements */
-.case-badge {
-  display: inline-block;
-  font-size: 11px;
-  letter-spacing: 0.8px;
-  color: var(--indigo-l);
-  background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: 4px;
-  padding: 3px 9px;
-  margin-bottom: 16px;
 }
 
 /* Footer */
