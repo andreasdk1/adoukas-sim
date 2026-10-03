@@ -19,11 +19,11 @@
     return g.getImageData(0, 0, img.width, img.height).data;
   }
 
-  Promise.all([fetch(BASE + 'meta.json').then(r => r.json()), loadImg(BASE + 'fields.png'), loadImg(BASE + 'vel.png'), loadImg(BASE + 'material.png')])
-    .then(([meta, fImg, vImg, mImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg)))
+  Promise.all([fetch(BASE + 'meta.json').then(r => r.json()), loadImg(BASE + 'fields.png'), loadImg(BASE + 'vel.png'), loadImg(BASE + 'material.png'), loadImg(BASE + 'ice.png')])
+    .then(([meta, fImg, vImg, mImg, iImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg), pixels(iImg), iImg.width))
     .catch(() => { el('ck-status').textContent = 'Could not load the simulation data.'; });
 
-  function init(meta, F, V, Mt) {
+  function init(meta, F, V, Mt, ICEPX, ICEW) {
     const NX = meta.nx, NY = meta.ny, NF = meta.frames.length, CELL = meta.cell_mm;
     const WMM = NX * CELL, HMM = NY * CELL;
     const [TLO, THI] = meta.T_range, ABVHI = meta.abv_range[1], VMAX = meta.v_max;
@@ -300,15 +300,47 @@
           R = TMAP[q]; Gc = TMAP[q + 1]; B = TMAP[q + 2];
         }
         if (m === 1) { R = R * 0.55 + 110; Gc = Gc * 0.55 + 118; B = B * 0.55 + 130; }   // glass: paler
-        if (fs > 0.02) { const a = Math.min(0.85, fs * 0.85); R += (238 - R) * a; Gc += (246 - Gc) * a; B += (255 - B) * a; }
+        if (fs > 0.02) { const a = Math.min(0.35, fs * 0.35); R += (238 - R) * a; Gc += (246 - Gc) * a; B += (255 - B) * a; }
         d[o] = R; d[o + 1] = Gc; d[o + 2] = B; d[o + 3] = 255;
       }
       ox.putImageData(img, 0, 0);
       cx.clearRect(0, 0, W, H);
       cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
       cx.drawImage(off, 0, 0, W, H);
+      drawIce(f0, f1, w);
       drawGlass();
       drawDrops();
+    }
+    // Ice cubes: rigid bodies drawn from their own stored shape, position and angle
+    const IB = meta.ice_bodies || [];
+    const iceCv = IB.map(b => { const c = document.createElement('canvas'); c.width = b.cells; c.height = b.cells; return c; });
+    function drawIce(f0, f1, w) {
+      const fr = w < 0.5 ? f0 : f1;                     // shape from the nearest frame
+      IB.forEach((b, ib) => {
+        const p0 = meta.frames[f0].bodies[ib], p1 = meta.frames[f1].bodies[ib];
+        // angles interpolated the short way round
+        const dth = ((p1[2] - p0[2] + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        const x = p0[0] + (p1[0] - p0[0]) * w, y = p0[1] + (p1[1] - p0[1]) * w, th = p0[2] + dth * w;
+        const nC = b.cells, g = iceCv[ib].getContext('2d'), im = g.createImageData(nC, nC);
+        const cellA = (2 * b.half / nC) ** 2;
+        let area = 0;
+        for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) area += ICEPX[((fr * nC + r) * ICEW + ib * nC + c) * 4] / 255 * cellA;
+        // the last slivers (< ~6 mm²) are numerically jittery: fade them out
+        const fade = Math.min(1, Math.max(0, (area - 3) / 5));
+        if (fade <= 0) return;
+        for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
+          const a = ICEPX[((fr * nC + r) * ICEW + ib * nC + c) * 4] / 255, o = (r * nC + c) * 4;
+          im.data[o] = 228; im.data[o + 1] = 240; im.data[o + 2] = 255; im.data[o + 3] = Math.min(255, a * 1.15 * 235) * fade;
+        }
+        g.putImageData(im, 0, 0);
+        const size = 2 * b.half * sc;
+        cx.save();
+        cx.translate(X(x), Y(y)); cx.rotate(-th);
+        cx.shadowColor = 'rgba(200,230,255,0.55)'; cx.shadowBlur = 6;
+        cx.imageSmoothingEnabled = true;
+        cx.drawImage(iceCv[ib], -size / 2, -size / 2, size, size);
+        cx.restore();
+      });
     }
     function drawGlass() {
       const g = Gm, t = g.wall, xo = (g.rim_y - g.apex_out) * tanA;
