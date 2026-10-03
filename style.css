@@ -441,3 +441,10 @@ h3 { font-size: 23px; line-height: 1.25; }
   .case-feature .case-fig { flex: none; aspect-ratio: 16 / 10; padding: 22px 20px 18px; }
   .case-feature .case-body { padding: 26px 26px 24px; }
 }
+
+/* Toolchain choice under services */
+.toolchains { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+.tc { padding: 30px 32px 32px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper-2); }
+.tc h3 { margin-bottom: 10px; }
+.tc p:last-child { color: var(--ink-2); font-size: 15.5px; }
+@media (max-width: 640px) { .toolchains { grid-template-columns: 1fr; } .tc { padding: 24px 22px; } }

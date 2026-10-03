@@ -36,6 +36,37 @@
     if (toggle) toggle.setAttribute('aria-expanded', 'false');
   }));
 
+  // Lightbox: click a case-study image to view it full size
+  const imgs = document.querySelectorAll('.case-media img');
+  if (imgs.length) {
+    const box = document.createElement('div');
+    box.className = 'lightbox';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.innerHTML = '<button class="lightbox-close" aria-label="Close">×</button><img alt=""><p class="lightbox-cap"></p>';
+    document.body.appendChild(box);
+    const big = box.querySelector('img'), cap = box.querySelector('.lightbox-cap');
+    let last = null;
+    const close = () => { box.classList.remove('open'); document.body.style.overflow = ''; if (last) last.focus(); };
+    imgs.forEach(img => {
+      img.tabIndex = 0;
+      img.setAttribute('role', 'button');
+      img.setAttribute('aria-label', 'Enlarge image: ' + img.alt);
+      const open = () => {
+        last = img;
+        big.src = img.currentSrc || img.src; big.alt = img.alt;
+        const fc = img.closest('figure')?.querySelector('figcaption');
+        cap.textContent = fc ? fc.textContent : '';
+        box.classList.add('open'); document.body.style.overflow = 'hidden';
+        box.querySelector('.lightbox-close').focus();
+      };
+      img.addEventListener('click', open);
+      img.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
+    box.addEventListener('click', e => { if (e.target !== big) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && box.classList.contains('open')) close(); });
+  }
+
   const items = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver(entries => {

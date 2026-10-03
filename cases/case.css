@@ -98,3 +98,36 @@
 
 .metric-block + h2 { margin-top: 0; }
 .case-body strong { color: var(--ink); font-weight: 600; }
+
+/* Click-to-enlarge */
+.case-media img { cursor: zoom-in; transition: box-shadow .25s var(--ease); }
+.case-media img:hover { box-shadow: 0 28px 56px -26px rgba(11,20,48,.5); }
+.lightbox {
+  position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; padding: 56px 24px 24px;
+  background: rgba(6, 10, 22, 0.94); cursor: zoom-out;
+  opacity: 0; pointer-events: none; transition: opacity .2s var(--ease);
+}
+.lightbox.open { opacity: 1; pointer-events: auto; }
+.lightbox img {
+  max-width: min(100%, 1800px); max-height: calc(100vh - 140px); width: auto; height: auto;
+  border-radius: 8px; box-shadow: 0 30px 80px rgba(0,0,0,.5); cursor: default; background: #fff;
+}
+.lightbox-cap { font: 400 12.5px/1.6 var(--mono); color: var(--on-night-2); max-width: 80ch; text-align: center; }
+.lightbox-close {
+  position: absolute; top: 14px; right: 18px; width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid rgba(169,192,234,.3); background: transparent; color: var(--on-night);
+  font-size: 24px; line-height: 1; cursor: pointer;
+}
+.lightbox-close:hover { border-color: var(--on-night); }
+
+/* Physics / role-of-ML panel */
+.physics-box {
+  margin: -16px 0 48px; border: 1px solid var(--line); border-left: 3px solid var(--blue);
+  border-radius: 0 var(--radius) var(--radius) 0; background: var(--paper-2);
+}
+.physics-box div { display: grid; grid-template-columns: 120px 1fr; gap: 20px; padding: 16px 22px; }
+.physics-box div + div { border-top: 1px solid var(--line); }
+.physics-box dt { font: 500 11.5px/1.9 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+.physics-box dd { font-size: 15.5px; color: var(--ink-2); line-height: 1.6; }
+@media (max-width: 640px) { .physics-box div { grid-template-columns: 1fr; gap: 4px; } }
