@@ -199,8 +199,11 @@
   } else {
     // Pre-warm so the first paint already shows field lines
     for (let i = 0; i < 90; i++) step();
-    new IntersectionObserver(([e]) => (e.isIntersecting ? start() : stop())).observe(canvas);
-    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+    let onScreen = true;
+    new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; onScreen ? start() : stop(); }).observe(canvas);
+    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : onScreen && start()));
+    window.addEventListener('blur', () => { if (!drag) stop(); });
+    window.addEventListener('focus', () => onScreen && start());
   }
   let rt;
   window.addEventListener('resize', () => {

@@ -443,3 +443,13 @@ h3 { font-size: 23px; line-height: 1.25; }
 .tc h3 { margin-bottom: 10px; }
 .tc p:last-child { color: var(--ink-2); font-size: 15.5px; }
 @media (max-width: 640px) { .toolchains { grid-template-columns: 1fr; } .tc { padding: 24px 22px; } }
+
+/* Live demo button in the nav */
+.nav-demo { margin-left: -24px; }
+.nav.scrolled .nav-demo { color: var(--ink); border-color: #cfd6e4; }
+.nav.scrolled .nav-demo:hover { border-color: var(--ink); }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #5fd3a0; box-shadow: 0 0 0 3px rgba(95,211,160,.18); }
+.only-mobile { display: none; }
+@media (max-width: 1040px) { .nav-demo { margin-left: 0; } }
+@media (max-width: 860px) { .nav-demo { display: none; } .only-mobile { display: block; } }
+.btn-ghost { background: transparent; }
