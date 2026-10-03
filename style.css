@@ -428,3 +428,16 @@ h3 { font-size: 23px; line-height: 1.25; }
   .hero-actions .btn { flex: 1 1 auto; justify-content: center; }
   .footer-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
+
+/* Featured case: full-width, figure beside text */
+.case-feature { grid-column: 1 / -1; flex-direction: row; }
+.case-feature .case-fig { flex: 0 0 52%; aspect-ratio: auto; padding: 32px 36px 26px; }
+.case-feature .case-body { padding: 36px 40px 32px; justify-content: center; }
+.case-feature h3 { font-size: clamp(24px, 2.4vw, 30px); }
+.case-feature .case-body > p:not(.tool) { margin-bottom: 28px; }
+.case-feature .metric { font-size: 38px; }
+@media (max-width: 860px) {
+  .case-feature { flex-direction: column; }
+  .case-feature .case-fig { flex: none; aspect-ratio: 16 / 10; padding: 22px 20px 18px; }
+  .case-feature .case-body { padding: 26px 26px 24px; }
+}
