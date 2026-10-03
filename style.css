@@ -276,9 +276,9 @@ h3 { font-size: 23px; line-height: 1.25; }
     radial-gradient(120% 90% at 80% 0%, rgba(90,128,200,.18), transparent 60%);
   padding: 22px 20px 18px; aspect-ratio: 16 / 10; display: flex; align-items: center;
 }
-.case-body { padding: 26px 26px 24px; display: flex; flex-direction: column; flex: 1; }
+.case > .case-body { padding: 26px 26px 24px; display: flex; flex-direction: column; flex: 1; }
 .case h3 { font-size: 21px; margin-bottom: 12px; }
-.case-body > p:not(.tool) { color: var(--ink-2); font-size: 15px; margin-bottom: 24px; }
+.case > .case-body > p:not(.tool) { color: var(--ink-2); font-size: 15px; margin-bottom: 24px; }
 .case-foot {
   margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line);
   display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 12px;
@@ -453,3 +453,19 @@ h3 { font-size: 23px; line-height: 1.25; }
 @media (max-width: 1040px) { .nav-demo { margin-left: 0; } }
 @media (max-width: 860px) { .nav-demo { display: none; } .only-mobile { display: block; } }
 .btn-ghost { background: transparent; }
+
+/* Just-for-fun case card */
+.case-fun {
+  margin-top: 24px; display: flex; align-items: center; gap: 32px; padding: 26px 36px;
+  border-radius: var(--radius); background: var(--night); color: var(--on-night);
+  background-image: radial-gradient(80% 140% at 0% 50%, rgba(90,128,200,.22), transparent 60%);
+  transition: transform .35s var(--ease), box-shadow .35s var(--ease);
+}
+.case-fun:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -18px rgba(11,20,48,.45); }
+.fun-glass { width: 92px; flex: none; }
+.case-fun .tool { color: var(--blue-3); }
+.case-fun h3 { color: #fff; font-size: 24px; margin-bottom: 6px; }
+.case-fun .fun-body p:last-child { color: var(--on-night-2); font-size: 15px; }
+.case-fun .arrow { margin-left: auto; color: var(--blue-3); font-size: 20px; }
+.case-fun:hover .arrow { transform: translateX(4px); }
+@media (max-width: 640px) { .case-fun { flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px; } .case-fun .arrow { display: none; } }

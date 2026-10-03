@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Martini on the rocks: ice, dilution and warming – Andreas Doukas</title>
+  <meta name="description" content="Just for fun: a physics simulation of ice melting in a martini glass, with dilution, convection, condensation and the drink warming to room temperature.">
+  <meta property="og:title" content="How fast does the ice water down your martini?">
+  <meta property="og:description" content="Case study by Andreas Doukas, EM &amp; thermal simulation consulting.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://andreasdk1.github.io/adoukas-sim/cases/cocktail.html">
+  <meta property="og:image" content="https://andreasdk1.github.io/adoukas-sim/assets/og-card2.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://andreasdk1.github.io/adoukas-sim/assets/og-card2.jpg">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="case.css">
+  <link rel="stylesheet" href="cocktail.css">
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<body class="case-page">
+
+<header id="nav" class="nav on-dark">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html" aria-label="Andreas Doukas — home"><svg class="mono" viewBox="0 0 104 74" aria-hidden="true"><path d="M4,70 L30,6 L56,70" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M34,46 L43.8,70" stroke="#5a80c8" stroke-width="5"/><path d="M40,6 H70 A32,32 0 0 1 70,70 H60" fill="none" stroke="currentColor" stroke-width="5"/></svg><span class="wordmark"><span class="wm-name">Andreas Doukas</span><span class="wm-tag">Simulation · Optimization · Performance</span></span></a>
+    <a class="nav-back" href="../index.html#case-studies">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      All <span>case studies</span>
+    </a>
+  </div>
+</header>
+
+<section class="case-hero">
+  <div class="wrap">
+    <span class="case-tag">Just for fun · Heat transfer + CFD + phase change</span>
+    <h1>How fast does the ice water down your martini?</h1>
+    <p class="ck-lede">A martini served on the rocks, simulated from the moment it's poured until the ice is gone and the drink sits at room temperature. Press play, or drag the time slider.</p>
+  </div>
+</section>
+
+<section class="ck-band">
+  <div class="wrap ck-grid">
+    <div class="ck-main">
+      <div class="ck-toolbar">
+        <div class="seg" role="radiogroup" aria-label="View">
+          <label><input type="radio" name="ck-view" value="temp" checked><span>Temperature</span></label>
+          <label><input type="radio" name="ck-view" value="abv"><span>Dilution</span></label>
+          <label><input type="radio" name="ck-view" value="flow"><span>Flow</span></label>
+        </div>
+      </div>
+      <div id="ck-stage" class="ck-stage">
+        <canvas id="ck-canvas"></canvas>
+        <canvas id="ck-particles"></canvas>
+        <p id="ck-status" class="ck-status">Loading simulation…</p>
+      </div>
+      <div class="ck-legend">
+        <div id="ck-legend-temp" class="lg"><span>−10 °C</span><i class="ramp ck-temp"></i><span>25 °C</span><em>drink and glass</em><span class="ck-air-key"><i></i>air colder than the room</span></div>
+        <div id="ck-legend-abv" class="lg" hidden><span>≤ 20 %</span><i class="ramp ck-abv"></i><span>30 % ABV</span><em>alcohol content (meltwater shows as blue)</em></div>
+        <div id="ck-legend-flow" class="lg" hidden><em>streaks show the direction of flow in the drink (time-lapse) and in the air (real time)</em></div>
+      </div>
+    </div>
+
+    <aside class="ck-panel">
+      <div class="ck-clock"><span>t =</span> <b id="ck-time">0:00 min</b></div>
+      <div class="ck-transport">
+        <button id="ck-play" class="btn btn-primary btn-sm" type="button">Pause</button>
+        <div class="seg seg-sm" role="radiogroup" aria-label="Playback speed">
+          <label><input type="radio" name="ck-speed" value="1" checked><span>1×</span></label>
+          <label><input type="radio" name="ck-speed" value="3"><span>3×</span></label>
+          <label><input type="radio" name="ck-speed" value="8"><span>8×</span></label>
+        </div>
+      </div>
+      <input id="ck-scrub" type="range" min="0" max="1" value="0" aria-label="Time">
+      <dl class="ck-read">
+        <div><dt>Drink temperature</dt><dd id="ck-drink">–</dd></div>
+        <div><dt>Ice left</dt><dd id="ck-ice">–</dd></div>
+        <div><dt>ABV top / bottom</dt><dd id="ck-abv">–</dd></div>
+        <div><dt>Condensation on the bowl</dt><dd id="ck-dew">–</dd></div>
+      </dl>
+      <canvas id="ck-chart" class="ck-chart" aria-label="Drink temperature and ice remaining over time"></canvas>
+      <p class="ck-chart-key"><i style="background:#e9c46a"></i>drink temperature <i style="background:#a9d8ff"></i>ice left</p>
+    </aside>
+  </div>
+</section>
+
+<main class="case-body">
+<div class="metric-block">
+    <span class="metric-number">41 min</span>
+    <span class="metric-label">until the last of the ice is gone. The drink then takes about 2 h 20 min more to reach 20 °C.</span>
+  </div>
+
+  <dl class="physics-box">
+    <div><dt>Physics</dt><dd>Heat conduction through glass, ice and drink; melting with latent heat; buoyant flow in the drink driven by both temperature and alcohol content; mixing of meltwater into the cocktail; heat from the room by natural convection, radiation and condensation on the cold glass. The room air around the glass is solved live in your browser.</dd></div>
+    <div><dt>Role of ML</dt><dd>None. It's a straight physics simulation, computed once in Python and played back here as a time-lapse.</dd></div>
+  </dl>
+
+  <h2>What you're watching</h2>
+  <ul>
+    <li><strong>The ice:</strong> two cubes from a −18 °C freezer, floating at the surface. They warm to 0 °C within the first minute, then melt, which takes most of the heat out of the drink.</li>
+    <li><strong>Sinking meltwater:</strong> a martini (gin and vermouth, about 30 % alcohol) is lighter than water: about 962 against 1000 kg/m³. The cold, fresh meltwater coming off the ice is the densest liquid in the glass, so it sinks in streams and pools in the bottom of the V. Switch to <em>Dilution</em> to watch the bottom get watered down first: after 10 minutes the top is still at 28.5 % alcohol while the bottom is down to 26 %. By the end the whole drink is at about 23 %, roughly a quarter weaker than poured.</li>
+    <li><strong>Condensation:</strong> once the glass drops below the dew point of the room (12.6 °C at 22 °C and 55 % humidity), water condenses on it. That isn't just cosmetic: condensation releases latent heat into the glass and is a large part of what warms the drink.</li>
+    <li><strong>The cold air:</strong> air next to the glass cools, gets denser and slides down the bowl and the stem onto the table. The room air is solved live, in real time, using the glass temperature from the simulation.</li>
+  </ul>
+
+  <h2>Setup</h2>
+  <p>A martini glass (3 mm wall) filled to 10 mm below the rim, with the drink poured at 3 °C into a glass at room temperature, plus two 16 mm ice cubes at −18 °C. Room at 22 °C and 55 % relative humidity. Yes, ice in a martini glass is unusual. It just looks better.</p>
+
+  <h2>Stated limits</h2>
+  <ul>
+    <li>This is a 2D slice through the glass, so the mechanisms are right and the times are the right order of magnitude, but they're indicative rather than exact for a real 3D glass.</li>
+    <li>The ice melts at 0 °C. In reality ice in alcohol also slowly dissolves slightly below 0 °C. The drink doesn't evaporate, and the ice stays flush with the surface.</li>
+    <li>Flow in the drink is resolved on a 0.75 mm grid: plumes and layering are captured, while the finest eddies are smoothed out.</li>
+  </ul>
+</main>
+
+<section class="case-cta">
+  <div class="wrap">
+    <h2>Same physics, less gin: have a real heat-transfer problem?</h2>
+    <div class="actions">
+      <a class="btn btn-primary" href="../index.html#contact">Start a conversation</a>
+      <a class="btn btn-ghost" href="../index.html#case-studies">More case studies <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <a class="brand" href="../index.html" aria-label="Andreas Doukas — home"><svg class="mono" viewBox="0 0 104 74" aria-hidden="true"><path d="M4,70 L30,6 L56,70" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M34,46 L43.8,70" stroke="#5a80c8" stroke-width="5"/><path d="M40,6 H70 A32,32 0 0 1 70,70 H60" fill="none" stroke="currentColor" stroke-width="5"/></svg><span class="wordmark"><span class="wm-name">Andreas Doukas</span><span class="wm-tag">Simulation · Optimization · Performance</span></span></a>
+    <p>© 2026 Andreas Doukas s.p. · Slovenia, EU</p>
+    <p>EM &amp; thermal simulation consulting</p>
+  </div>
+</footer>
+
+<script src="../js/site.js" defer></script>
+<script src="../js/cocktail.js" defer></script>
+
+</body>
+</html>
