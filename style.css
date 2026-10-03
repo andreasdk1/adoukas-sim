@@ -301,13 +301,9 @@ h3 { font-size: 23px; line-height: 1.25; }
   background-image: radial-gradient(var(--blue-3) 1px, transparent 1px); background-size: 14px 14px;
   opacity: .7;
 }
-.about-photo figcaption { font: 400 11.5px var(--mono); color: var(--muted); margin-top: 30px; letter-spacing: .04em; }
+.about-photo figcaption { font: 400 11.5px var(--mono); color: var(--muted); margin-top: 42px; letter-spacing: .04em; }
 .about-text h2 { margin-bottom: 28px; }
 .about-text > p:not(.eyebrow) { color: var(--ink-2); margin-bottom: 18px; max-width: 36em; }
-.facts { margin-top: 36px; border-top: 1px solid var(--line); }
-.facts div { display: grid; grid-template-columns: 130px 1fr; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line); }
-.facts dt { font: 500 11.5px/1.9 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.facts dd { font-size: 15.5px; color: var(--ink); }
 
 /* ---------- Contact ---------- */
 .contact { position: relative; overflow: hidden; }
@@ -424,7 +420,6 @@ h3 { font-size: 23px; line-height: 1.25; }
   .cred-k { font-size: 21px; }
   .svc { padding: 26px 22px 30px; }
   .contact-form .row { grid-template-columns: 1fr; }
-  .facts div { grid-template-columns: 1fr; gap: 2px; }
   .hero-actions .btn { flex: 1 1 auto; justify-content: center; }
   .footer-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
