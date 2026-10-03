@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Andreas Doukas – EM & Thermal Simulation Consulting</title>
   <meta name="description" content="Independent Ansys simulation consulting for power electronics, EM machines, PCB integrity, and thermal management. Dr. Andreas Doukas, PhD.">
+  <meta name="theme-color" content="#080e1e">
 
   <!-- Open Graph — controls link previews in iMessage, Slack, LinkedIn, WhatsApp -->
   <meta property="og:title" content="Andreas Doukas – EM & Thermal Simulation Consulting">
@@ -19,293 +20,282 @@
   <meta name="twitter:description" content="Independent Ansys consulting for power electronics, EM machines, PCB integrity, and thermal management.">
   <meta name="twitter:image" content="https://andreasdk1.github.io/adoukas-sim/assets/og-preview.png">
 
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 
   <!-- NAV -->
-  <nav id="nav">
-    <a class="nav-logo" href="#">
-      <img src="assets/logo-nav-light.svg" height="36" alt="Andreas Doukas">
-    </a>
-    <ul class="nav-links">
-      <li><a href="#services">Services</a></li>
-      <li><a href="#case-studies">Case studies</a></li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#contact">Contact</a></li>
-    </ul>
-  </nav>
+  <header id="nav" class="nav on-dark">
+    <div class="nav-inner">
+      <a class="brand" href="#top" aria-label="Andreas Doukas — home">
+        <svg class="mono" viewBox="0 0 104 74" aria-hidden="true"><path d="M4,70 L30,6 L56,70" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M34,46 L43.8,70" stroke="#5a80c8" stroke-width="5"/><path d="M40,6 H70 A32,32 0 0 1 70,70 H60" fill="none" stroke="currentColor" stroke-width="5"/></svg><span class="wordmark"><span class="wm-name">Andreas Doukas</span><span class="wm-tag">Simulation · Optimization · Performance</span></span>
+      </a>
+      <nav aria-label="Primary">
+        <ul class="nav-links">
+          <li><a href="#services">Services</a></li>
+          <li><a href="#approach">Approach</a></li>
+          <li><a href="#case-studies">Case studies</a></li>
+          <li><a href="#about">About</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="#contact">Get in touch</a>
+      <button class="nav-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    </div>
+  </header>
 
   <!-- HERO -->
-  <section id="hero" class="hero">
-    <div class="hero-left">
-      <p class="hero-eyebrow">Electromagnetic · Thermal · RF simulation</p>
-      <h1>High-fidelity simulation<br>for <em>hardware that matters</em></h1>
-      <p class="hero-name">Dr. Andreas Doukas</p>
-      <p class="hero-sub">Independent Ansys consulting for power electronics, EM machines, PCB integrity, and thermal management. PhD-level expertise, startup-friendly engagement.</p>
-      <a class="cta" href="#contact">Request a consultation</a>
-      <p class="hero-note">Typical response within 24 hours · Slovenia, EU</p>
+  <section id="top" class="hero">
+    <canvas id="field" aria-hidden="true"></canvas>
+    <canvas id="field-marks" aria-hidden="true"></canvas>
+    <div class="hero-scrim" aria-hidden="true"></div>
+    <div class="hero-grid" aria-hidden="true"></div>
+
+    <div class="wrap hero-inner">
+      <p class="eyebrow on-dark">Electromagnetic · Thermal · RF simulation</p>
+      <h1>High-fidelity simulation for hardware that <em>matters</em>.</h1>
+      <p class="hero-sub">Independent Ansys consulting for power electronics, electric machines, PCBs and thermal design.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#contact">Request a consultation</a>
+        <a class="btn btn-ghost" href="#case-studies">See case studies <span aria-hidden="true">→</span></a>
+      </div>
+      <p class="hero-note"><span class="dot" aria-hidden="true"></span>Typically responds within 24 hours · Slovenia, EU</p>
     </div>
-    <div class="hero-right">
-      <div class="stat-card">
-        <p class="stat-label">Tools</p>
-        <p class="stat-val sm">Icepak · Maxwell<br>HFSS · SIwave</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">Experience</p>
-        <p class="stat-val">8+</p>
-        <p class="stat-sub">years in EM & thermal simulation</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">Background</p>
-        <p class="stat-val sm">PhD Theoretical Physics<br>JSI, Ljubljana</p>
-      </div>
+
+    <p class="fig-note" aria-hidden="true">Fig. 1 — live |B| streamlines · 5 line currents · 2D magnetostatic<br><span>⊙ current out of page &nbsp; ⊗ into page</span></p>
+
+    <div class="wrap creds">
+      <div class="cred"><span class="cred-k">PhD</span><span class="cred-v">Theoretical physics, Jožef Stefan Institute</span></div>
+      <div class="cred"><span class="cred-k">8+ yrs</span><span class="cred-v">EM &amp; thermal simulation in industry R&amp;D</span></div>
+      <div class="cred"><span class="cred-k">Ansys EDT</span><span class="cred-v">Maxwell · HFSS · Icepak · SIwave</span></div>
+      <div class="cred"><span class="cred-k">Python</span><span class="cred-v">PyAEDT automation &amp; ML surrogates</span></div>
     </div>
   </section>
-
-  <!-- TOOLS BAR -->
-  <div class="tools-bar">
-    <span class="tools-label">Powered by</span>
-    <span class="tool-badge">Ansys Electronics Desktop</span>
-    <span class="tool-badge">Python</span>
-    <span class="tool-badge">PyAEDT</span>    
-  </div>
-
-  <hr class="divider">
 
   <!-- SERVICES -->
   <section id="services" class="section">
-    <p class="eyebrow">What I do</p>
-    <h2>Simulation services across the <span>full EM & thermal stack</span></h2>
-    <div class="services-grid">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow"><span class="num">01</span>Services</p>
+          <h2>Simulation across the full electromagnetic &amp; thermal stack</h2>
+        </div>
+        <p class="section-lede">Validated models and clear answers your team can act on.</p>
+      </div>
 
-      <article class="svc-card">
-        <!-- RF antenna / radiation pattern -->
-        <svg class="svc-icon" viewBox="65 300 86 58" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <line x1="108" y1="338" x2="108" y2="310" stroke="#3f51b5" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M97 343 Q85 326 97 309" stroke="#3f51b5" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M119 343 Q131 326 119 309" stroke="#3f51b5" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M86 349 Q69 326 86 303" stroke="#3f51b5" stroke-width="1.1" stroke-linecap="round" stroke-opacity="0.6"/>
-          <path d="M130 349 Q147 326 130 303" stroke="#3f51b5" stroke-width="1.1" stroke-linecap="round" stroke-opacity="0.6"/>
-        </svg>
-        <h3 class="svc-name">RF & Microwave Design</h3>
-        <p class="svc-tool">HFSS</p>
-        <p class="svc-desc">Antenna design, S-parameters, waveguide, filter optimization</p>
-      </article>
-
-      <article class="svc-card">
-        <!-- PCB / IC package with pins -->
-        <svg class="svc-icon" viewBox="188 299 58 58" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect x="200" y="311" width="34" height="34" rx="3" stroke="#388e3c" stroke-width="1.5"/>
-          <line x1="217" y1="311" x2="217" y2="303" stroke="#388e3c" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="225" y1="311" x2="225" y2="303" stroke="#388e3c" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="234" y1="319" x2="242" y2="319" stroke="#388e3c" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="234" y1="327" x2="242" y2="327" stroke="#388e3c" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="217" y1="345" x2="217" y2="353" stroke="#388e3c" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="209" y1="345" x2="209" y2="353" stroke="#388e3c" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="200" y1="323" x2="192" y2="323" stroke="#388e3c" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="200" y1="331" x2="192" y2="331" stroke="#388e3c" stroke-width="1.3" stroke-linecap="round"/>
-          <circle cx="217" cy="323" r="2.5" fill="#388e3c"/>
-          <circle cx="225" cy="331" r="2.5" fill="#388e3c"/>
-        </svg>
-        <h3 class="svc-name">PCB Signal & Power Integrity</h3>
-        <p class="svc-tool">SIwave</p>
-        <p class="svc-desc">PDN analysis, crosstalk, via optimization, EMI pre-compliance</p>
-      </article>
-
-      <article class="svc-card">
-        <!-- Heatsink with fins and heat waves -->
-        <svg class="svc-icon" viewBox="311 300 58 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect x="323" y="318" width="34" height="26" rx="2" stroke="#e65100" stroke-width="1.5"/>
-          <rect x="329" y="324" width="22" height="14" rx="1" stroke="#f57c00" stroke-width="0.9"/>
-          <path d="M331,310C332.333,306 333.667,306 335,310" stroke="#e65100" stroke-width="1.3" stroke-linecap="round"/>
-          <path d="M338,310C339.333,306 340.667,306 342,310" stroke="#e65100" stroke-width="1.3" stroke-linecap="round"/>
-          <path d="M345,310C346.333,306 347.667,306 349,310" stroke="#e65100" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="323" y1="326" x2="315" y2="326" stroke="#e65100" stroke-width="1.1" stroke-linecap="round"/>
-          <line x1="323" y1="333" x2="315" y2="333" stroke="#e65100" stroke-width="1.1" stroke-linecap="round"/>
-          <line x1="357" y1="326" x2="365" y2="326" stroke="#e65100" stroke-width="1.1" stroke-linecap="round"/>
-          <line x1="357" y1="333" x2="365" y2="333" stroke="#e65100" stroke-width="1.1" stroke-linecap="round"/>
-        </svg>
-        <h3 class="svc-name">Thermal Management</h3>
-        <p class="svc-tool">Icepak</p>
-        <p class="svc-desc">PCB & component cooling, heat sink optimization, junction temps</p>
-      </article>
-
-      <article class="svc-card">
-        <!-- Motor cross-section — concentric circles with pole lines -->
-        <svg class="svc-icon" viewBox="437 302 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="463" cy="328" r="23" stroke="#7b1fa2" stroke-width="1.6"/>
-          <circle cx="463" cy="328" r="11" stroke="#ab47bc" stroke-width="1"/>
-          <circle cx="463" cy="328" r="3" fill="#7b1fa2"/>
-          <line x1="463" y1="305" x2="463" y2="315" stroke="#7b1fa2" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="463" y1="341" x2="463" y2="351" stroke="#7b1fa2" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="440" y1="328" x2="450" y2="328" stroke="#7b1fa2" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="476" y1="328" x2="486" y2="328" stroke="#7b1fa2" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="447" y1="311" x2="454" y2="318" stroke="#7b1fa2" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="472" y1="338" x2="479" y2="345" stroke="#7b1fa2" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="479" y1="311" x2="472" y2="318" stroke="#7b1fa2" stroke-width="1.3" stroke-linecap="round"/>
-          <line x1="454" y1="338" x2="447" y2="345" stroke="#7b1fa2" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
-        <h3 class="svc-name">EM Machines</h3>
-        <p class="svc-tool">Maxwell</p>
-        <p class="svc-desc">Motor/generator design, torque ripple, loss analysis, demagnetization</p>
-      </article>
-
-      <article class="svc-card">
-        <!-- EMC shield with wave pattern -->
-        <svg class="svc-icon" viewBox="545 300 54 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M572,304L595,311L595,330C595,342 587.333,350.667 572,356C556.667,350.667 549,342 549,330L549,311L572,304Z" stroke="#1565c0" stroke-width="1.6"/>
-          <path d="M561,329C565,323.667 568.667,323.667 572,329C575.333,334.333 579,334.333 583,329" stroke="#1565c0" stroke-width="1.4" stroke-linecap="round"/>
-          <path d="M557,329C561.667,319.667 566.667,319.667 572,329C577.333,338.333 582.333,338.333 587,329" stroke="#1565c0" stroke-width="0.9" stroke-linecap="round" stroke-opacity="0.4"/>
-          <circle cx="572" cy="329" r="2.8" fill="#1565c0"/>
-        </svg>
-        <h3 class="svc-name">EMC / EMI Analysis</h3>
-        <p class="svc-tool">HFSS · Maxwell</p>
-        <p class="svc-desc">Conducted & radiated emissions, shielding effectiveness, IEC compliance</p>
-      </article>
-
+      <div class="svc-grid">
+        <article class="svc reveal">
+          <div class="svc-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Polar radiation pattern" xmlns="http://www.w3.org/2000/svg"><circle class="grid" cx="160" cy="92" r="26"/><circle class="grid" cx="160" cy="92" r="52"/><circle class="grid" cx="160" cy="92" r="78"/><line class="grid" x1="82" y1="92" x2="238" y2="92"/><line class="grid" x1="92.5" y1="53" x2="227.5" y2="131"/><line class="grid" x1="121" y1="24.5" x2="199" y2="159.5"/><line class="grid" x1="160" y1="14" x2="160" y2="170"/><line class="grid" x1="199" y1="24.5" x2="121" y2="159.5"/><line class="grid" x1="227.5" y1="53" x2="92.5" y2="131"/><polygon class="fill1" points="200.3,92 199.6,91.3 198.8,90.6 198,90 197,89.4 196,88.8 195,88.3 194,87.8 193,87.4 192,86.9 191.3,86.5 190.8,86 190.6,85.5 190.7,84.9 191.2,84.2 192.1,83.4 193.1,82.5 194.4,81.5 195.8,80.4 197.3,79.2 198.7,77.9 200.2,76.6 201.5,75.2 202.8,73.8 204.1,72.4 205.2,70.9 206.2,69.4 207.2,67.9 208.1,66.4 208.9,64.9 209.6,63.4 210.2,61.8 210.7,60.3 211.2,58.7 211.6,57.2 211.9,55.6 212.2,54.1 212.4,52.5 212.5,51 212.5,49.5 212.5,48 212.4,46.5 212.2,45 212,43.5 211.7,42.1 211.3,40.7 210.9,39.3 210.4,37.9 209.9,36.6 209.3,35.3 208.6,34.1 207.9,32.9 207.1,31.7 206.3,30.6 205.4,29.5 204.5,28.5 203.5,27.6 202.4,26.7 201.4,25.8 200.2,25 199.1,24.3 197.9,23.7 196.6,23.1 195.4,22.6 194.1,22.1 192.8,21.8 191.4,21.5 190,21.2 188.7,21.1 187.3,21 185.9,20.9 184.5,21 183,21.1 181.6,21.3 180.2,21.6 178.8,21.9 177.4,22.3 176,22.7 174.6,23.3 173.2,23.9 171.9,24.5 170.6,25.3 169.3,26.1 168,26.9 166.7,27.9 165.5,28.8 164.3,29.9 163.2,31 162.1,32.2 161,33.4 160,34.8 159,36.1 158.1,37.6 157.2,39.1 156.4,40.7 155.7,42.3 155,44 154.3,45.8 153.8,47.6 153.3,49.5 152.8,51.4 152.5,53.3 152.2,55.1 151.9,56.9 151.7,58.5 151.4,59.9 151.1,61.1 150.8,61.9 150.3,62.3 149.8,62.4 149.1,62.1 148.4,61.7 147.5,61.1 146.6,60.5 145.7,59.8 144.7,59.2 143.7,58.6 142.7,58.1 141.8,57.7 140.8,57.4 139.9,57.1 139,57 138.1,56.9 137.2,57 136.5,57.1 135.7,57.3 135,57.6 134.4,58 133.8,58.5 133.3,59 132.9,59.7 132.5,60.4 132.2,61.1 132,62 131.9,62.9 131.9,63.9 132,64.9 132.2,66 132.5,67.2 132.9,68.4 133.5,69.7 134.1,71.1 135,72.4 135.9,73.9 137,75.3 138.1,76.7 139.4,78.1 140.5,79.3 141.5,80.5 142.2,81.3 142.5,81.9 142.2,82.1 141.4,82.1 140.1,81.9 138.6,81.6 136.9,81.2 135.1,80.9 133.4,80.7 131.7,80.5 130,80.5 128.5,80.5 127.1,80.7 125.8,80.9 124.7,81.2 123.6,81.6 122.7,82 121.8,82.5 121.1,83 120.5,83.6 120,84.2 119.6,84.9 119.3,85.6 119.1,86.3 119.1,87 119.1,87.7 119.3,88.4 119.5,89.2 119.9,89.9 120.5,90.6 121.1,91.3 121.9,92 122.8,92.6 123.9,93.3 125.1,93.8 126.5,94.3 128.1,94.8 129.9,95.2 131.9,95.4 134.2,95.6 136.8,95.7 139.6,95.6 142.8,95.3 146.2,94.9 149.5,94.4 152.4,93.9 153.9,93.6 153.3,93.9 151.1,94.7 148,95.9 144.9,97.2 141.9,98.6 139.3,99.9 137,101.3 135,102.6 133.4,103.9 131.9,105.1 130.7,106.3 129.7,107.4 128.9,108.5 128.2,109.6 127.8,110.6 127.4,111.6 127.2,112.5 127.1,113.4 127.1,114.2 127.2,114.9 127.5,115.6 127.8,116.2 128.3,116.8 128.8,117.3 129.4,117.7 130.1,118 130.9,118.2 131.8,118.3 132.8,118.3 133.8,118.2 135,117.9 136.2,117.5 137.6,116.9 139,116.1 140.6,115.2 142.2,113.9 144.1,112.4 146.1,110.5 148.3,108.1 150.8,105.1 153.8,101.2 157.4,96 157.6,95.9 157.6,95.9 157.7,96 157.8,96 157.9,96 157.8,96.2 155.1,102 153.2,106.5 151.9,110.2 151,113.3 150.3,116 149.9,118.3 149.7,120.4 149.6,122.2 149.6,123.9 149.8,125.3 150.1,126.6 150.4,127.7 150.8,128.7 151.3,129.5 151.9,130.3 152.4,130.8 153.1,131.3 153.7,131.7 154.4,131.9 155.1,132 155.8,132 156.5,131.8 157.2,131.6 157.9,131.2 158.6,130.7 159.3,130 160,129.2 160.6,128.3 161.2,127.2 161.8,125.9 162.3,124.5 162.7,122.9 163,121 163.3,118.9 163.5,116.6 163.5,113.9 163.3,111 163.1,107.7 162.6,104.3 162.1,101.1 161.7,98.8 161.6,98.1 162.2,99.5 163.1,102.3 164.4,105.4 165.7,108.6 167.1,111.4 168.4,113.9 169.7,116.1 171,118 172.3,119.6 173.5,121 174.7,122.2 175.9,123.1 177,123.9 178,124.5 179.1,125 180,125.4 181,125.6 181.9,125.7 182.7,125.6 183.5,125.5 184.2,125.3 184.8,124.9 185.4,124.5 185.9,124 186.4,123.4 186.7,122.8 187,122 187.2,121.2 187.3,120.3 187.3,119.3 187.2,118.3 187,117.2 186.7,116 186.2,114.8 185.7,113.5 184.9,112.2 184.1,110.8 183.1,109.4 182,108 180.9,106.6 179.7,105.3 178.7,104.1 177.9,103.2 177.4,102.5 177.5,102.1 178.1,102.1 179.2,102.2 180.7,102.5 182.4,102.9 184.2,103.3 186,103.6 187.8,103.8 189.5,103.9 191.1,103.9 192.6,103.8 193.9,103.7 195.2,103.4 196.4,103.1 197.4,102.7 198.4,102.3 199.2,101.8 200,101.2 200.6,100.6 201.1,100 201.6,99.3 201.9,98.6 202.1,97.9 202.2,97.2 202.3,96.4 202.2,95.7 202,94.9 201.7,94.2 201.3,93.4 200.9,92.7 200.3,92"/><polygon class="c1" points="200.3,92 199.6,91.3 198.8,90.6 198,90 197,89.4 196,88.8 195,88.3 194,87.8 193,87.4 192,86.9 191.3,86.5 190.8,86 190.6,85.5 190.7,84.9 191.2,84.2 192.1,83.4 193.1,82.5 194.4,81.5 195.8,80.4 197.3,79.2 198.7,77.9 200.2,76.6 201.5,75.2 202.8,73.8 204.1,72.4 205.2,70.9 206.2,69.4 207.2,67.9 208.1,66.4 208.9,64.9 209.6,63.4 210.2,61.8 210.7,60.3 211.2,58.7 211.6,57.2 211.9,55.6 212.2,54.1 212.4,52.5 212.5,51 212.5,49.5 212.5,48 212.4,46.5 212.2,45 212,43.5 211.7,42.1 211.3,40.7 210.9,39.3 210.4,37.9 209.9,36.6 209.3,35.3 208.6,34.1 207.9,32.9 207.1,31.7 206.3,30.6 205.4,29.5 204.5,28.5 203.5,27.6 202.4,26.7 201.4,25.8 200.2,25 199.1,24.3 197.9,23.7 196.6,23.1 195.4,22.6 194.1,22.1 192.8,21.8 191.4,21.5 190,21.2 188.7,21.1 187.3,21 185.9,20.9 184.5,21 183,21.1 181.6,21.3 180.2,21.6 178.8,21.9 177.4,22.3 176,22.7 174.6,23.3 173.2,23.9 171.9,24.5 170.6,25.3 169.3,26.1 168,26.9 166.7,27.9 165.5,28.8 164.3,29.9 163.2,31 162.1,32.2 161,33.4 160,34.8 159,36.1 158.1,37.6 157.2,39.1 156.4,40.7 155.7,42.3 155,44 154.3,45.8 153.8,47.6 153.3,49.5 152.8,51.4 152.5,53.3 152.2,55.1 151.9,56.9 151.7,58.5 151.4,59.9 151.1,61.1 150.8,61.9 150.3,62.3 149.8,62.4 149.1,62.1 148.4,61.7 147.5,61.1 146.6,60.5 145.7,59.8 144.7,59.2 143.7,58.6 142.7,58.1 141.8,57.7 140.8,57.4 139.9,57.1 139,57 138.1,56.9 137.2,57 136.5,57.1 135.7,57.3 135,57.6 134.4,58 133.8,58.5 133.3,59 132.9,59.7 132.5,60.4 132.2,61.1 132,62 131.9,62.9 131.9,63.9 132,64.9 132.2,66 132.5,67.2 132.9,68.4 133.5,69.7 134.1,71.1 135,72.4 135.9,73.9 137,75.3 138.1,76.7 139.4,78.1 140.5,79.3 141.5,80.5 142.2,81.3 142.5,81.9 142.2,82.1 141.4,82.1 140.1,81.9 138.6,81.6 136.9,81.2 135.1,80.9 133.4,80.7 131.7,80.5 130,80.5 128.5,80.5 127.1,80.7 125.8,80.9 124.7,81.2 123.6,81.6 122.7,82 121.8,82.5 121.1,83 120.5,83.6 120,84.2 119.6,84.9 119.3,85.6 119.1,86.3 119.1,87 119.1,87.7 119.3,88.4 119.5,89.2 119.9,89.9 120.5,90.6 121.1,91.3 121.9,92 122.8,92.6 123.9,93.3 125.1,93.8 126.5,94.3 128.1,94.8 129.9,95.2 131.9,95.4 134.2,95.6 136.8,95.7 139.6,95.6 142.8,95.3 146.2,94.9 149.5,94.4 152.4,93.9 153.9,93.6 153.3,93.9 151.1,94.7 148,95.9 144.9,97.2 141.9,98.6 139.3,99.9 137,101.3 135,102.6 133.4,103.9 131.9,105.1 130.7,106.3 129.7,107.4 128.9,108.5 128.2,109.6 127.8,110.6 127.4,111.6 127.2,112.5 127.1,113.4 127.1,114.2 127.2,114.9 127.5,115.6 127.8,116.2 128.3,116.8 128.8,117.3 129.4,117.7 130.1,118 130.9,118.2 131.8,118.3 132.8,118.3 133.8,118.2 135,117.9 136.2,117.5 137.6,116.9 139,116.1 140.6,115.2 142.2,113.9 144.1,112.4 146.1,110.5 148.3,108.1 150.8,105.1 153.8,101.2 157.4,96 157.6,95.9 157.6,95.9 157.7,96 157.8,96 157.9,96 157.8,96.2 155.1,102 153.2,106.5 151.9,110.2 151,113.3 150.3,116 149.9,118.3 149.7,120.4 149.6,122.2 149.6,123.9 149.8,125.3 150.1,126.6 150.4,127.7 150.8,128.7 151.3,129.5 151.9,130.3 152.4,130.8 153.1,131.3 153.7,131.7 154.4,131.9 155.1,132 155.8,132 156.5,131.8 157.2,131.6 157.9,131.2 158.6,130.7 159.3,130 160,129.2 160.6,128.3 161.2,127.2 161.8,125.9 162.3,124.5 162.7,122.9 163,121 163.3,118.9 163.5,116.6 163.5,113.9 163.3,111 163.1,107.7 162.6,104.3 162.1,101.1 161.7,98.8 161.6,98.1 162.2,99.5 163.1,102.3 164.4,105.4 165.7,108.6 167.1,111.4 168.4,113.9 169.7,116.1 171,118 172.3,119.6 173.5,121 174.7,122.2 175.9,123.1 177,123.9 178,124.5 179.1,125 180,125.4 181,125.6 181.9,125.7 182.7,125.6 183.5,125.5 184.2,125.3 184.8,124.9 185.4,124.5 185.9,124 186.4,123.4 186.7,122.8 187,122 187.2,121.2 187.3,120.3 187.3,119.3 187.2,118.3 187,117.2 186.7,116 186.2,114.8 185.7,113.5 184.9,112.2 184.1,110.8 183.1,109.4 182,108 180.9,106.6 179.7,105.3 178.7,104.1 177.9,103.2 177.4,102.5 177.5,102.1 178.1,102.1 179.2,102.2 180.7,102.5 182.4,102.9 184.2,103.3 186,103.6 187.8,103.8 189.5,103.9 191.1,103.9 192.6,103.8 193.9,103.7 195.2,103.4 196.4,103.1 197.4,102.7 198.4,102.3 199.2,101.8 200,101.2 200.6,100.6 201.1,100 201.6,99.3 201.9,98.6 202.1,97.9 202.2,97.2 202.3,96.4 202.2,95.7 202,94.9 201.7,94.2 201.3,93.4 200.9,92.7 200.3,92"/><text class="lbl" x="164" y="167">0 dB</text><text class="lbl" x="164" y="141">−10</text><text class="lbl" x="164" y="115">−20</text><text class="lbl" x="10" y="16">E-plane gain</text></svg></div>
+          <p class="tool">HFSS</p>
+          <h3>RF &amp; microwave design</h3>
+          <p>Antennas, S-parameters, filters.</p>
+        </article>
+        <article class="svc reveal">
+          <div class="svc-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="PDN impedance versus frequency, before and after optimisation" xmlns="http://www.w3.org/2000/svg"><line class="grid" x1="34" y1="54" x2="306" y2="54"/><line class="grid" x1="34" y1="86" x2="306" y2="86"/><line class="grid" x1="34" y1="118" x2="306" y2="118"/><line class="grid" x1="102" y1="22" x2="102" y2="150"/><line class="grid" x1="170" y1="22" x2="170" y2="150"/><line class="grid" x1="238" y1="22" x2="238" y2="150"/><path class="ax" d="M34,22 L34,150 L306,150"/><text class="lbl" x="306" y="166" text-anchor="end">frequency (log)</text><text class="lbl" x="40" y="26">|Z|</text><line class="lim" x1="34" y1="100" x2="306" y2="100"/><text class="lbl" x="42" y="95">target</text><path class="c2" d="M34,117 L35.4,117.1 L36.7,117.2 L38.1,117.3 L39.4,117.4 L40.8,117.5 L42.2,117.6 L43.5,117.7 L44.9,117.8 L46.2,117.9 L47.6,118 L49,118.1 L50.3,118.2 L51.7,118.3 L53,118.4 L54.4,118.5 L55.8,118.6 L57.1,118.7 L58.5,118.8 L59.8,118.9 L61.2,118.9 L62.6,119 L63.9,119.1 L65.3,119.2 L66.6,119.3 L68,119.4 L69.4,119.5 L70.7,119.6 L72.1,119.6 L73.4,119.7 L74.8,119.8 L76.2,119.9 L77.5,120 L78.9,120 L80.2,120.1 L81.6,120.1 L83,120.1 L84.3,120.1 L85.7,120.1 L87,119.9 L88.4,119.7 L89.8,119.4 L91.1,118.9 L92.5,118.3 L93.8,117.3 L95.2,116.1 L96.6,114.6 L97.9,112.7 L99.3,110.4 L100.6,107.7 L102,104.6 L103.4,101.2 L104.7,97.5 L106.1,93.7 L107.4,89.9 L108.8,86.3 L110.2,83 L111.5,80.3 L112.9,78.2 L114.2,76.9 L115.6,76.5 L117,77 L118.3,78.3 L119.7,80.5 L121,83.3 L122.4,86.6 L123.8,90.2 L125.1,94.1 L126.5,97.9 L127.8,101.6 L129.2,105.1 L130.6,108.2 L131.9,111 L133.3,113.3 L134.6,115.3 L136,116.9 L137.4,118.1 L138.7,119.1 L140.1,119.8 L141.4,120.3 L142.8,120.7 L144.2,120.9 L145.5,121.1 L146.9,121.1 L148.2,121.2 L149.6,121.2 L151,121.2 L152.3,121.1 L153.7,121.1 L155,121 L156.4,121 L157.8,120.9 L159.1,120.8 L160.5,120.8 L161.8,120.7 L163.2,120.6 L164.6,120.4 L165.9,120.3 L167.3,120.1 L168.6,120 L170,119.7 L171.4,119.4 L172.7,119 L174.1,118.5 L175.4,117.9 L176.8,117.1 L178.2,116.1 L179.5,114.8 L180.9,113.2 L182.2,111.3 L183.6,108.8 L185,105.9 L186.3,102.5 L187.7,98.5 L189,93.9 L190.4,88.7 L191.8,82.9 L193.1,76.7 L194.5,70.1 L195.8,63.2 L197.2,56.2 L198.6,49.3 L199.9,42.7 L201.3,36.6 L202.6,31.3 L204,26.8 L205.4,23.4 L206.7,21.3 L208.1,20.4 L209.4,20.8 L210.8,22.5 L212.2,25.4 L213.5,29.4 L214.9,34.3 L216.2,39.9 L217.6,46 L219,52.4 L220.3,58.9 L221.7,65.3 L223,71.4 L224.4,77.2 L225.8,82.4 L227.1,87.2 L228.5,91.3 L229.8,94.8 L231.2,97.8 L232.6,100.2 L233.9,102.1 L235.3,103.6 L236.6,104.7 L238,105.5 L239.4,106 L240.7,106.3 L242.1,106.4 L243.4,106.4 L244.8,106.3 L246.2,106.1 L247.5,105.8 L248.9,105.5 L250.2,105.1 L251.6,104.8 L253,104.4 L254.3,103.9 L255.7,103.5 L257,103.1 L258.4,102.6 L259.8,102.1 L261.1,101.7 L262.5,101.2 L263.8,100.7 L265.2,100.2 L266.6,99.7 L267.9,99.2 L269.3,98.7 L270.6,98.2 L272,97.7 L273.4,97.1 L274.7,96.6 L276.1,96 L277.4,95.5 L278.8,94.9 L280.2,94.3 L281.5,93.8 L282.9,93.2 L284.2,92.6 L285.6,92 L287,91.4 L288.3,90.7 L289.7,90.1 L291,89.5 L292.4,88.8 L293.8,88.2 L295.1,87.5 L296.5,86.9 L297.8,86.2 L299.2,85.5 L300.6,84.8 L301.9,84.1 L303.3,83.4 L304.6,82.7 L306,82"/><path class="c1" d="M34,130 L35.4,130 L36.7,130.1 L38.1,130.1 L39.4,130.2 L40.8,130.2 L42.2,130.3 L43.5,130.3 L44.9,130.4 L46.2,130.4 L47.6,130.5 L49,130.5 L50.3,130.6 L51.7,130.6 L53,130.7 L54.4,130.7 L55.8,130.8 L57.1,130.8 L58.5,130.9 L59.8,130.9 L61.2,131 L62.6,131 L63.9,131.1 L65.3,131.1 L66.6,131.1 L68,131.2 L69.4,131.2 L70.7,131.3 L72.1,131.3 L73.4,131.3 L74.8,131.4 L76.2,131.4 L77.5,131.4 L78.9,131.4 L80.2,131.5 L81.6,131.5 L83,131.5 L84.3,131.4 L85.7,131.4 L87,131.3 L88.4,131.2 L89.8,131.1 L91.1,131 L92.5,130.8 L93.8,130.6 L95.2,130.3 L96.6,130 L97.9,129.7 L99.3,129.3 L100.6,128.9 L102,128.4 L103.4,127.9 L104.7,127.3 L106.1,126.7 L107.4,126.1 L108.8,125.6 L110.2,125 L111.5,124.4 L112.9,123.9 L114.2,123.4 L115.6,123 L117,122.7 L118.3,122.5 L119.7,122.3 L121,122.3 L122.4,122.3 L123.8,122.5 L125.1,122.7 L126.5,123.1 L127.8,123.5 L129.2,124 L130.6,124.5 L131.9,125.1 L133.3,125.7 L134.6,126.3 L136,126.9 L137.4,127.5 L138.7,128 L140.1,128.5 L141.4,129 L142.8,129.5 L144.2,129.9 L145.5,130.2 L146.9,130.5 L148.2,130.7 L149.6,130.9 L151,131.1 L152.3,131.1 L153.7,131.2 L155,131.2 L156.4,131.2 L157.8,131.1 L159.1,130.9 L160.5,130.8 L161.8,130.6 L163.2,130.3 L164.6,130 L165.9,129.6 L167.3,129.2 L168.6,128.7 L170,128.1 L171.4,127.5 L172.7,126.9 L174.1,126.1 L175.4,125.4 L176.8,124.6 L178.2,123.7 L179.5,122.8 L180.9,121.9 L182.2,120.9 L183.6,120 L185,119.1 L186.3,118.2 L187.7,117.4 L189,116.6 L190.4,115.9 L191.8,115.3 L193.1,114.8 L194.5,114.4 L195.8,114.1 L197.2,114 L198.6,113.9 L199.9,114 L201.3,114.2 L202.6,114.5 L204,114.9 L205.4,115.4 L206.7,116 L208.1,116.6 L209.4,117.3 L210.8,118 L212.2,118.7 L213.5,119.4 L214.9,120.1 L216.2,120.8 L217.6,121.5 L219,122.1 L220.3,122.7 L221.7,123.2 L223,123.6 L224.4,124 L225.8,124.4 L227.1,124.7 L228.5,124.9 L229.8,125.1 L231.2,125.2 L232.6,125.3 L233.9,125.3 L235.3,125.3 L236.6,125.3 L238,125.2 L239.4,125.1 L240.7,125 L242.1,124.9 L243.4,124.7 L244.8,124.6 L246.2,124.4 L247.5,124.2 L248.9,124 L250.2,123.8 L251.6,123.6 L253,123.4 L254.3,123.2 L255.7,123 L257,122.8 L258.4,122.5 L259.8,122.3 L261.1,122 L262.5,121.8 L263.8,121.6 L265.2,121.3 L266.6,121 L267.9,120.8 L269.3,120.5 L270.6,120.3 L272,120 L273.4,119.7 L274.7,119.4 L276.1,119.2 L277.4,118.9 L278.8,118.6 L280.2,118.3 L281.5,118 L282.9,117.7 L284.2,117.4 L285.6,117.1 L287,116.8 L288.3,116.5 L289.7,116.1 L291,115.8 L292.4,115.5 L293.8,115.2 L295.1,114.8 L296.5,114.5 L297.8,114.1 L299.2,113.8 L300.6,113.4 L301.9,113.1 L303.3,112.7 L304.6,112.4 L306,112"/></svg></div>
+          <p class="tool">SIwave</p>
+          <h3>PCB signal &amp; power integrity</h3>
+          <p>PDN, crosstalk, vias, EMI pre-compliance.</p>
+        </article>
+        <article class="svc reveal">
+          <div class="svc-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Thermal map of a circuit board with hotspots" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="hs0"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><radialGradient id="hs1"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><radialGradient id="hs2"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><linearGradient id="cbar" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#1a1640"/><stop offset="0.3" stop-color="#6b2a6e"/><stop offset="0.55" stop-color="#d9483b"/><stop offset="0.8" stop-color="#f7a440"/><stop offset="1" stop-color="#ffe9a8"/></linearGradient><clipPath id="brd"><rect x="22" y="20" width="248" height="140" rx="4"/></clipPath></defs><g clip-path="url(#brd)"><rect x="22" y="20" width="248" height="140" fill="#1a1640"/><circle cx="110" cy="82" r="92" fill="url(#hs0)"/><circle cx="205" cy="118" r="70" fill="url(#hs1)"/><circle cx="196" cy="48" r="52" fill="url(#hs2)"/><ellipse class="iso" cx="110" cy="82" rx="25.299999999999997" ry="22"/><ellipse class="iso" cx="110" cy="82" rx="50.599999999999994" ry="44"/><ellipse class="iso" cx="205" cy="118" rx="20.7" ry="18"/><ellipse class="iso" cx="205" cy="118" rx="41.4" ry="36"/></g><rect class="comp" x="92" y="66" width="36" height="32" rx="1.5"/><rect class="comp" x="190" y="104" width="30" height="28" rx="1.5"/><rect class="comp" x="184" y="38" width="24" height="20" rx="1.5"/><rect class="comp" x="40" y="120" width="30" height="22" rx="1.5"/><rect class="comp" x="40" y="34" width="22" height="40" rx="1.5"/><rect x="284" y="20" width="10" height="140" rx="2" fill="url(#cbar)"/><text class="lbl" x="300" y="27">hot</text><text class="lbl" x="300" y="160">amb</text></svg></div>
+          <p class="tool">Icepak</p>
+          <h3>Thermal management</h3>
+          <p>Board cooling, heatsinks, junction temperatures.</p>
+        </article>
+        <article class="svc reveal">
+          <div class="svc-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Permanent-magnet motor cross-section with flux paths" xmlns="http://www.w3.org/2000/svg"><circle class="ax" cx="160" cy="90" r="80"/><circle class="ax" cx="160" cy="90" r="52"/><line class="slot" x1="213" y1="90" x2="228" y2="90"/><line class="slot" x1="211.2" y1="103.7" x2="225.7" y2="107.6"/><line class="slot" x1="205.9" y1="116.5" x2="218.9" y2="124"/><line class="slot" x1="197.5" y1="127.5" x2="208.1" y2="138.1"/><line class="slot" x1="186.5" y1="135.9" x2="194" y2="148.9"/><line class="slot" x1="173.7" y1="141.2" x2="177.6" y2="155.7"/><line class="slot" x1="160" y1="143" x2="160" y2="158"/><line class="slot" x1="146.3" y1="141.2" x2="142.4" y2="155.7"/><line class="slot" x1="133.5" y1="135.9" x2="126" y2="148.9"/><line class="slot" x1="122.5" y1="127.5" x2="111.9" y2="138.1"/><line class="slot" x1="114.1" y1="116.5" x2="101.1" y2="124"/><line class="slot" x1="108.8" y1="103.7" x2="94.3" y2="107.6"/><line class="slot" x1="107" y1="90" x2="92" y2="90"/><line class="slot" x1="108.8" y1="76.3" x2="94.3" y2="72.4"/><line class="slot" x1="114.1" y1="63.5" x2="101.1" y2="56"/><line class="slot" x1="122.5" y1="52.5" x2="111.9" y2="41.9"/><line class="slot" x1="133.5" y1="44.1" x2="126" y2="31.1"/><line class="slot" x1="146.3" y1="38.8" x2="142.4" y2="24.3"/><line class="slot" x1="160" y1="37" x2="160" y2="22"/><line class="slot" x1="173.7" y1="38.8" x2="177.6" y2="24.3"/><line class="slot" x1="186.5" y1="44.1" x2="194" y2="31.1"/><line class="slot" x1="197.5" y1="52.5" x2="208.1" y2="41.9"/><line class="slot" x1="205.9" y1="63.5" x2="218.9" y2="56"/><line class="slot" x1="211.2" y1="76.3" x2="225.7" y2="72.4"/><circle class="ax" cx="160" cy="90" r="47"/><path class="mag1" d="M197.9,93 A38,38 0 0 1 188.9,114.6 L195,119.8 A46,46 0 0 0 205.9,93.7 Z"/><path class="mag2" d="M184.6,118.9 A38,38 0 0 1 163,127.9 L163.7,135.9 A46,46 0 0 0 189.8,125 Z"/><path class="mag1" d="M157,127.9 A38,38 0 0 1 135.4,118.9 L130.2,125 A46,46 0 0 0 156.3,135.9 Z"/><path class="mag2" d="M131.1,114.6 A38,38 0 0 1 122.1,93 L114.1,93.7 A46,46 0 0 0 125,119.8 Z"/><path class="mag1" d="M122.1,87 A38,38 0 0 1 131.1,65.4 L125,60.2 A46,46 0 0 0 114.1,86.3 Z"/><path class="mag2" d="M135.4,61.1 A38,38 0 0 1 157,52.1 L156.3,44.1 A46,46 0 0 0 130.2,55 Z"/><path class="mag1" d="M163,52.1 A38,38 0 0 1 184.6,61.1 L189.8,55 A46,46 0 0 0 163.7,44.1 Z"/><path class="mag2" d="M188.9,65.4 A38,38 0 0 1 197.9,87 L205.9,86.3 A46,46 0 0 0 195,60.2 Z"/><circle class="ax" cx="160" cy="90" r="12"/><path class="c1" d="M197.5,111.1 L219.3,123.4 Q224.5,126.3 219.7,133.8 A74,74 0 0 1 203.8,149.7 Q196.3,154.5 193.4,149.3 L181.1,127.5"/><path class="c1 thin" d="M194.7,115.4 L211.6,127.8 Q216.5,131.4 211.1,137.9 A70,70 0 0 1 207.9,141.1 Q201.4,146.5 197.8,141.6 L185.4,124.7"/><path class="c1" d="M171.6,131.4 L178.3,155.5 Q179.9,161.3 171.3,163.1 A74,74 0 0 1 148.7,163.1 Q140.1,161.3 141.7,155.5 L148.4,131.4"/><path class="c1 thin" d="M166.5,132.5 L169.7,153.3 Q170.6,159.2 162.3,160 A70,70 0 0 1 157.7,160 Q149.4,159.2 150.3,153.3 L153.5,132.5"/><path class="c1" d="M138.9,127.5 L126.6,149.3 Q123.7,154.5 116.2,149.7 A74,74 0 0 1 100.3,133.8 Q95.5,126.3 100.7,123.4 L122.5,111.1"/><path class="c1 thin" d="M134.6,124.7 L122.2,141.6 Q118.6,146.5 112.1,141.1 A70,70 0 0 1 108.9,137.9 Q103.5,131.4 108.4,127.8 L125.3,115.4"/><path class="c1" d="M118.6,101.6 L94.5,108.3 Q88.7,109.9 86.9,101.3 A74,74 0 0 1 86.9,78.7 Q88.7,70.1 94.5,71.7 L118.6,78.4"/><path class="c1 thin" d="M117.5,96.5 L96.7,99.7 Q90.8,100.6 90,92.3 A70,70 0 0 1 90,87.7 Q90.8,79.4 96.7,80.3 L117.5,83.5"/><path class="c1" d="M122.5,68.9 L100.7,56.6 Q95.5,53.7 100.3,46.2 A74,74 0 0 1 116.2,30.3 Q123.7,25.5 126.6,30.7 L138.9,52.5"/><path class="c1 thin" d="M125.3,64.6 L108.4,52.2 Q103.5,48.6 108.9,42.1 A70,70 0 0 1 112.1,38.9 Q118.6,33.5 122.2,38.4 L134.6,55.3"/><path class="c1" d="M148.4,48.6 L141.7,24.5 Q140.1,18.7 148.7,16.9 A74,74 0 0 1 171.3,16.9 Q179.9,18.7 178.3,24.5 L171.6,48.6"/><path class="c1 thin" d="M153.5,47.5 L150.3,26.7 Q149.4,20.8 157.7,20 A70,70 0 0 1 162.3,20 Q170.6,20.8 169.7,26.7 L166.5,47.5"/><path class="c1" d="M181.1,52.5 L193.4,30.7 Q196.3,25.5 203.8,30.3 A74,74 0 0 1 219.7,46.2 Q224.5,53.7 219.3,56.6 L197.5,68.9"/><path class="c1 thin" d="M185.4,55.3 L197.8,38.4 Q201.4,33.5 207.9,38.9 A70,70 0 0 1 211.1,42.1 Q216.5,48.6 211.6,52.2 L194.7,64.6"/><path class="c1" d="M201.4,78.4 L225.5,71.7 Q231.3,70.1 233.1,78.7 A74,74 0 0 1 233.1,101.3 Q231.3,109.9 225.5,108.3 L201.4,101.6"/><path class="c1 thin" d="M202.5,83.5 L223.3,80.3 Q229.2,79.4 230,87.7 A70,70 0 0 1 230,92.3 Q229.2,100.6 223.3,99.7 L202.5,96.5"/><text class="lbl" x="10" y="16">8-pole PMSM</text></svg></div>
+          <p class="tool">Maxwell</p>
+          <h3>Electric machines</h3>
+          <p>Motors, torque ripple, losses, demagnetisation.</p>
+        </article>
+        <article class="svc reveal">
+          <div class="svc-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Radiated emissions spectrum against a regulatory limit line" xmlns="http://www.w3.org/2000/svg"><line class="grid" x1="34" y1="54" x2="306" y2="54"/><line class="grid" x1="34" y1="86" x2="306" y2="86"/><line class="grid" x1="34" y1="118" x2="306" y2="118"/><line class="grid" x1="102" y1="22" x2="102" y2="150"/><line class="grid" x1="170" y1="22" x2="170" y2="150"/><line class="grid" x1="238" y1="22" x2="238" y2="150"/><path class="ax" d="M34,22 L34,150 L306,150"/><text class="lbl" x="306" y="166" text-anchor="end">frequency (log)</text><text class="lbl" x="40" y="26">dBµV/m</text><path class="lim" d="M34,72 L148.2,72 L148.2,58 L306,58"/><text class="lbl" x="306" y="53" text-anchor="end">limit</text><path class="c1" d="M34,120.1 L35,120.7 L36,117.3 L37,120.4 L38,117.2 L39,117.8 L40,119.3 L41,116.2 L42,118.6 L43,115.9 L44,117.7 L45,117.2 L46,114.8 L47,112 L48,115.9 L49,114.9 L50,112.2 L51,109.9 L52,111.8 L53,112.6 L54,108.8 L55,114 L56,108.9 L57,112 L58,112.6 L59,112.5 L60,111.1 L61,107.8 L62,111.3 L63,108.7 L64,108.1 L65,109.5 L66,108.3 L67,111 L68,110.8 L69,109.8 L70,106.8 L71,108.1 L72,108.7 L73,107 L74,107.6 L75,108.5 L76,105.4 L77,105.9 L78,108.6 L79,106.5 L80,105.7 L81,97.2 L82,83 L83,76.3 L84,82.8 L85,102.7 L86,106.6 L87,105.6 L88,109.4 L89,107.4 L90,110.2 L91,106.6 L92,106.1 L93,107.4 L94,105.8 L95,109.3 L96,107.2 L97,108 L98,108.3 L99,109.2 L100,107.1 L101,106.8 L102,109.8 L103,108.9 L104,112.8 L105,109.2 L106,109.9 L107,108.1 L108,109.4 L109,112.9 L110,112.6 L111,111.3 L112,115.5 L113,113.2 L114,115.3 L115,116 L116,116.7 L117,112.8 L118,117 L119,116.6 L120,116.2 L121,113.7 L122,118.8 L123,117 L124,116.7 L125,115.1 L126,115.9 L127,116 L128,120 L129,119.5 L130,120.3 L131,117.5 L132,117.5 L133,122.7 L134,122.9 L135,123 L136,123.4 L137,122.3 L138,122 L139,124.3 L140,126.3 L141,124.1 L142,124.4 L143,119.7 L144,102.7 L145,82.4 L146,83.1 L147,104.8 L148,120.4 L149,128.6 L150,124.3 L151,125.3 L152,125 L153,125.8 L154,128.5 L155,128.7 L156,130.7 L157,127.8 L158,131.4 L159,130.7 L160,125.4 L161,116.2 L162,110.8 L163,120.5 L164,129.5 L165,131.8 L166,132.7 L167,131.2 L168,133.4 L169,128.4 L170,130 L171,132.9 L172,132.4 L173,131.8 L174,131.8 L175,133.2 L176,128.9 L177,128 L178,131.2 L179,131.1 L180,133.4 L181,133.2 L182,131.7 L183,132.1 L184,128.7 L185,132.6 L186,133.3 L187,127.6 L188,130 L189,132.1 L190,129.5 L191,132.5 L192,129.3 L193,126.4 L194,126.8 L195,127.6 L196,130 L197,129.1 L198,130.1 L199,126.2 L200,127.3 L201,125.6 L202,128 L203,128.3 L204,124.5 L205,123.1 L206,123.6 L207,123.5 L208,123.1 L209,123.2 L210,125.5 L211,119.1 L212,102.6 L213,79.1 L214,78 L215,101 L216,118.4 L217,120 L218,118.6 L219,121.2 L220,117.9 L221,117.2 L222,117 L223,120.2 L224,120.6 L225,120.2 L226,120 L227,119.5 L228,116.6 L229,114.6 L230,114.5 L231,116.3 L232,114.9 L233,113.6 L234,117.6 L235,113.7 L236,111.9 L237,112.3 L238,112.1 L239,113.4 L240,114.8 L241,110.8 L242,113.2 L243,110.1 L244,108.8 L245,111.9 L246,111.6 L247,108 L248,109.1 L249,112.1 L250,112.1 L251,111.7 L252,107 L253,107.3 L254,111 L255,106.8 L256,105.5 L257,105.8 L258,100.3 L259,85.2 L260,82.7 L261,94.9 L262,100.5 L263,106 L264,107.2 L265,104.7 L266,107.6 L267,104.9 L268,105.1 L269,108.8 L270,108.5 L271,108.2 L272,108.6 L273,106.5 L274,108.5 L275,107.6 L276,109.4 L277,104.7 L278,108.2 L279,107.6 L280,107 L281,105.2 L282,108.2 L283,105.4 L284,108 L285,108 L286,108.2 L287,111.5 L288,109.1 L289,110.9 L290,112.2 L291,107.6 L292,111.7 L293,110.1 L294,108.9 L295,110.1 L296,111.8 L297,111 L298,111 L299,110 L300,114.4 L301,112 L302,114.2 L303,114.3 L304,111.7 L305,113.6 L306,113.7"/><circle class="mark" cx="214" cy="78" r="5"/></svg></div>
+          <p class="tool">HFSS · Maxwell</p>
+          <h3>EMC / EMI analysis</h3>
+          <p>Emissions, shielding, IEC compliance.</p>
+        </article>
+        <article class="svc reveal">
+          <div class="svc-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Parity plot of surrogate predictions against full simulations" xmlns="http://www.w3.org/2000/svg"><line class="grid" x1="34" y1="54" x2="306" y2="54"/><line class="grid" x1="34" y1="86" x2="306" y2="86"/><line class="grid" x1="34" y1="118" x2="306" y2="118"/><line class="grid" x1="102" y1="22" x2="102" y2="150"/><line class="grid" x1="170" y1="22" x2="170" y2="150"/><line class="grid" x1="238" y1="22" x2="238" y2="150"/><path class="ax" d="M34,22 L34,150 L306,150"/><text class="lbl" x="306" y="166" text-anchor="end">simulated</text><text class="lbl" x="40" y="26">predicted</text><path class="band" d="M34,150 L306,8 L306,32 L54,150 Z"/><line class="lim" x1="34" y1="150" x2="306" y2="22"/><circle class="pt2" cx="112.3" cy="109.4" r="2.6"/><circle class="pt" cx="204.6" cy="68.7" r="2.6"/><circle class="pt" cx="209.9" cy="67.8" r="2.6"/><circle class="pt" cx="260.2" cy="43.8" r="2.6"/><circle class="pt" cx="118" cy="111.8" r="2.6"/><circle class="pt" cx="171.8" cy="98.3" r="2.6"/><circle class="pt2" cx="260" cy="38" r="2.6"/><circle class="pt" cx="88.6" cy="125.2" r="2.6"/><circle class="pt" cx="212.1" cy="69.5" r="2.6"/><circle class="pt" cx="237.5" cy="50.6" r="2.6"/><circle class="pt" cx="220.9" cy="68.3" r="2.6"/><circle class="pt" cx="201.5" cy="73.8" r="2.6"/><circle class="pt2" cx="129" cy="113.2" r="2.6"/><circle class="pt" cx="172.4" cy="86.4" r="2.6"/><circle class="pt" cx="232.2" cy="61.3" r="2.6"/><circle class="pt" cx="279.7" cy="30" r="2.6"/><circle class="pt" cx="153" cy="95.4" r="2.6"/><circle class="pt" cx="283.1" cy="28.7" r="2.6"/><circle class="pt2" cx="269.9" cy="40.8" r="2.6"/><circle class="pt" cx="106.7" cy="117" r="2.6"/><circle class="pt" cx="290" cy="24.3" r="2.6"/><circle class="pt" cx="128.9" cy="107.5" r="2.6"/><circle class="pt" cx="181" cy="78" r="2.6"/><circle class="pt" cx="200" cy="74.3" r="2.6"/><circle class="pt2" cx="199.8" cy="77" r="2.6"/><circle class="pt" cx="281.6" cy="30.1" r="2.6"/><circle class="pt" cx="264.7" cy="47.4" r="2.6"/><circle class="pt" cx="92.1" cy="122.3" r="2.6"/><circle class="pt" cx="265.7" cy="49.4" r="2.6"/><circle class="pt" cx="196.1" cy="71.8" r="2.6"/><circle class="pt2" cx="231" cy="59.1" r="2.6"/><circle class="pt" cx="197.2" cy="80.5" r="2.6"/><circle class="pt" cx="124.7" cy="114.5" r="2.6"/><circle class="pt" cx="295.7" cy="29.9" r="2.6"/><circle class="pt" cx="70.9" cy="133.9" r="2.6"/><circle class="pt" cx="88.6" cy="120.4" r="2.6"/><circle class="pt2" cx="127" cy="107.2" r="2.6"/><circle class="pt" cx="57.5" cy="130.9" r="2.6"/><circle class="pt" cx="207.2" cy="74.6" r="2.6"/><circle class="pt" cx="136.6" cy="103.5" r="2.6"/><circle class="pt" cx="270.4" cy="43.5" r="2.6"/><circle class="pt" cx="297.7" cy="25.4" r="2.6"/><circle class="pt2" cx="131.1" cy="109.1" r="2.6"/><circle class="pt" cx="53.4" cy="143.4" r="2.6"/><circle class="pt" cx="101.4" cy="113.7" r="2.6"/><circle class="pt" cx="90.1" cy="126.6" r="2.6"/><circle class="pt" cx="56.9" cy="141.6" r="2.6"/><circle class="pt" cx="288.5" cy="27.7" r="2.6"/><circle class="pt2" cx="274.1" cy="33.8" r="2.6"/><circle class="pt" cx="184.1" cy="82.4" r="2.6"/><circle class="pt" cx="214.3" cy="61" r="2.6"/><circle class="pt" cx="208.5" cy="65" r="2.6"/><circle class="pt" cx="284.3" cy="28" r="2.6"/><circle class="pt" cx="232.5" cy="56.4" r="2.6"/><circle class="pt2" cx="112.2" cy="109.7" r="2.6"/><circle class="pt" cx="184.4" cy="89.7" r="2.6"/><circle class="pt" cx="191.1" cy="80.2" r="2.6"/><circle class="pt" cx="198.8" cy="72.8" r="2.6"/><circle class="pt" cx="49.6" cy="138.4" r="2.6"/><circle class="pt" cx="62.4" cy="132.9" r="2.6"/><circle class="pt2" cx="210.3" cy="61.2" r="2.6"/><circle class="pt" cx="142.2" cy="100.4" r="2.6"/><circle class="pt" cx="229.4" cy="58" r="2.6"/><circle class="pt" cx="62.5" cy="135.7" r="2.6"/><circle class="pt" cx="222" cy="64.5" r="2.6"/><circle class="pt" cx="168.4" cy="86.1" r="2.6"/><circle class="pt2" cx="201.9" cy="69.4" r="2.6"/><circle class="pt" cx="131.9" cy="107.4" r="2.6"/><circle class="pt" cx="146.4" cy="94.3" r="2.6"/><circle class="pt" cx="148.4" cy="94.2" r="2.6"/></svg></div>
+          <p class="tool">Python · PyAEDT</p>
+          <h3>Automation &amp; ML surrogates</h3>
+          <p>Scripted sweeps, DoE and instant surrogate models.</p>
+        </article>
+      </div>
     </div>
   </section>
 
-  <hr class="divider">
+  <!-- APPROACH -->
+  <section id="approach" class="section section-dark">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow on-dark"><span class="num">02</span>Approach</p>
+          <h2>How an engagement runs</h2>
+        </div>
+        <p class="section-lede">Every result is validated before it reaches you.</p>
+      </div>
+      <ol class="steps">
+        <li class="step reveal">
+          <span class="step-n">01</span>
+          <h3>Scope</h3>
+          <p>Define the question and the accuracy it needs.</p>
+        </li>
+        <li class="step reveal">
+          <span class="step-n">02</span>
+          <h3>Model &amp; validate</h3>
+          <p>Build from your data; check mesh convergence.</p>
+        </li>
+        <li class="step reveal">
+          <span class="step-n">03</span>
+          <h3>Explore &amp; optimise</h3>
+          <p>Scripted sweeps, DoE and surrogates.</p>
+        </li>
+        <li class="step reveal">
+          <span class="step-n">04</span>
+          <h3>Deliver</h3>
+          <p>Report, models and scripts you can rerun.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
 
   <!-- CASE STUDIES -->
-  <section id="case-studies" class="cases-section">
-    <p class="eyebrow">Selected work</p>
-    <h2>Results from past <span>engagements</span></h2>
-    <div class="cases-grid">
+  <section id="case-studies" class="section section-tint">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow"><span class="num">03</span>Selected work</p>
+          <h2>Selected results</h2>
+        </div>
+        <p class="section-lede">Client work is anonymised.</p>
+      </div>
 
-      <article class="case-card">
-        <span class="case-tag" style="background:#fff3e0;color:#e65100">Thermal · Icepak</span>
-        <h3 class="case-title">Power converter thermal optimization for EV drivetrain</h3>
-        <p class="case-desc">Redesigned heatsink geometry and airflow path. Reduced max junction temperature while maintaining form factor.</p>
-        <p class="case-metric">−18°C</p>
-        <p class="case-metric-label">Max junction temp reduction</p>
-        <a class="case-link" href="cases/ev-thermal.html">Read case study →</a>
-      </article>
-
-      <article class="case-card">
-        <span class="case-tag" style="background:#f3e5f5;color:#7b1fa2">EM Machines · Maxwell</span>
-        <h3 class="case-title">PMSM loss analysis for high-speed industrial spindle</h3>
-        <p class="case-desc">Parametric sweep of rotor geometry to minimize eddy current losses at operating speed. Delivered validated FEA model.</p>
-        <p class="case-metric">+3.2%</p>
-        <p class="case-metric-label">Efficiency improvement</p>
-        <a class="case-link" href="cases/pmsm-loss.html">Read case study →</a>
-      </article>
-
-      <article class="case-card">
-        <span class="case-tag" style="background:#e8f5e9;color:#2e7d32">PCB · SIwave</span>
-        <h3 class="case-title">PDN optimization for high-speed digital board</h3>
-        <p class="case-desc">Identified resonance issues in power delivery network pre-production. Resolved via decap placement optimization.</p>
-        <p class="case-metric">−34 dB</p>
-        <p class="case-metric-label">Impedance peak reduction</p>
-        <a class="case-link" href="cases/pdn-optimization.html">Read case study →</a>
-      </article>
-
-      <article class="case-card">
-        <span class="case-tag" style="background:#e3f2fd;color:#1565c0">RF & Antenna · openEMS + ML</span>
-        <h3 class="case-title">Interactive surrogate model for meander-line PCB antenna design</h3>
-        <p class="case-desc">Trained ML surrogates on 288 real openEMS FDTD solves across four antenna topologies. Packaged as a live-feedback design GUI.</p>
-        <p class="case-metric">288</p>
-        <p class="case-metric-label">Real FDTD solves behind an instant GUI</p>
-        <a class="case-link" href="cases/meander-antenna.html">Read case study →</a>
-      </article>
-
-      <article class="case-card">
-        <span class="case-tag" style="background:#fce4ec;color:#ad1457">EMC / Tamper Security · ML Surrogate</span>
-        <h3 class="case-title">Magnetic tamper-immunity surrogate for revenue-metering CTs</h3>
-        <p class="case-desc">Closed-form magnetostatic shielding model plus a 512-point Sobol DoE, surrogated for instant tamper-margin exploration.</p>
-        <p class="case-metric">2.37%</p>
-        <p class="case-metric-label">Held-out surrogate error</p>
-        <a class="case-link" href="cases/ct-tamper.html">Read case study →</a>
-      </article>
-
-      <article class="case-card">
-        <span class="case-tag" style="background:#e0f7fa;color:#00838f">Sensor Tolerancing · ML Surrogate</span>
-        <h3 class="case-title">Manufacturing-tolerance surrogate for Rogowski-coil sensors</h3>
-        <p class="case-desc">Surrogated a validated Rogowski magnetostatic model for live IEC accuracy-class tolerance exploration. Presented at CADFEM World Conference 2026.</p>
-        <p class="case-metric">1.92%</p>
-        <p class="case-metric-label">Held-out surrogate error</p>
-        <a class="case-link" href="cases/rogowski-sensor.html">Read case study →</a>
-      </article>
-
+      <div class="case-grid">
+        <a class="case reveal" href="cases/ev-thermal.html">
+          <div class="case-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Thermal map of a circuit board with hotspots" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="hs0-2"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><radialGradient id="hs1-2"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><radialGradient id="hs2-2"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><linearGradient id="cbar-2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#1a1640"/><stop offset="0.3" stop-color="#6b2a6e"/><stop offset="0.55" stop-color="#d9483b"/><stop offset="0.8" stop-color="#f7a440"/><stop offset="1" stop-color="#ffe9a8"/></linearGradient><clipPath id="brd-2"><rect x="22" y="20" width="248" height="140" rx="4"/></clipPath></defs><g clip-path="url(#brd-2)"><rect x="22" y="20" width="248" height="140" fill="#1a1640"/><circle cx="110" cy="82" r="92" fill="url(#hs0-2)"/><circle cx="205" cy="118" r="70" fill="url(#hs1-2)"/><circle cx="196" cy="48" r="52" fill="url(#hs2-2)"/><ellipse class="iso" cx="110" cy="82" rx="25.299999999999997" ry="22"/><ellipse class="iso" cx="110" cy="82" rx="50.599999999999994" ry="44"/><ellipse class="iso" cx="205" cy="118" rx="20.7" ry="18"/><ellipse class="iso" cx="205" cy="118" rx="41.4" ry="36"/></g><rect class="comp" x="92" y="66" width="36" height="32" rx="1.5"/><rect class="comp" x="190" y="104" width="30" height="28" rx="1.5"/><rect class="comp" x="184" y="38" width="24" height="20" rx="1.5"/><rect class="comp" x="40" y="120" width="30" height="22" rx="1.5"/><rect class="comp" x="40" y="34" width="22" height="40" rx="1.5"/><rect x="284" y="20" width="10" height="140" rx="2" fill="url(#cbar-2)"/><text class="lbl" x="300" y="27">hot</text><text class="lbl" x="300" y="160">amb</text></svg></div>
+          <div class="case-body">
+            <p class="tool">Thermal · Icepak</p>
+            <h3>Power converter thermal optimisation for an EV drivetrain</h3>
+            <div class="case-foot"><span class="metric">−18 °C</span><span class="metric-l">max junction temperature</span><span class="arrow" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+        <a class="case reveal" href="cases/pmsm-loss.html">
+          <div class="case-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Permanent-magnet motor cross-section with flux paths" xmlns="http://www.w3.org/2000/svg"><circle class="ax" cx="160" cy="90" r="80"/><circle class="ax" cx="160" cy="90" r="52"/><line class="slot" x1="213" y1="90" x2="228" y2="90"/><line class="slot" x1="211.2" y1="103.7" x2="225.7" y2="107.6"/><line class="slot" x1="205.9" y1="116.5" x2="218.9" y2="124"/><line class="slot" x1="197.5" y1="127.5" x2="208.1" y2="138.1"/><line class="slot" x1="186.5" y1="135.9" x2="194" y2="148.9"/><line class="slot" x1="173.7" y1="141.2" x2="177.6" y2="155.7"/><line class="slot" x1="160" y1="143" x2="160" y2="158"/><line class="slot" x1="146.3" y1="141.2" x2="142.4" y2="155.7"/><line class="slot" x1="133.5" y1="135.9" x2="126" y2="148.9"/><line class="slot" x1="122.5" y1="127.5" x2="111.9" y2="138.1"/><line class="slot" x1="114.1" y1="116.5" x2="101.1" y2="124"/><line class="slot" x1="108.8" y1="103.7" x2="94.3" y2="107.6"/><line class="slot" x1="107" y1="90" x2="92" y2="90"/><line class="slot" x1="108.8" y1="76.3" x2="94.3" y2="72.4"/><line class="slot" x1="114.1" y1="63.5" x2="101.1" y2="56"/><line class="slot" x1="122.5" y1="52.5" x2="111.9" y2="41.9"/><line class="slot" x1="133.5" y1="44.1" x2="126" y2="31.1"/><line class="slot" x1="146.3" y1="38.8" x2="142.4" y2="24.3"/><line class="slot" x1="160" y1="37" x2="160" y2="22"/><line class="slot" x1="173.7" y1="38.8" x2="177.6" y2="24.3"/><line class="slot" x1="186.5" y1="44.1" x2="194" y2="31.1"/><line class="slot" x1="197.5" y1="52.5" x2="208.1" y2="41.9"/><line class="slot" x1="205.9" y1="63.5" x2="218.9" y2="56"/><line class="slot" x1="211.2" y1="76.3" x2="225.7" y2="72.4"/><circle class="ax" cx="160" cy="90" r="47"/><path class="mag1" d="M197.9,93 A38,38 0 0 1 188.9,114.6 L195,119.8 A46,46 0 0 0 205.9,93.7 Z"/><path class="mag2" d="M184.6,118.9 A38,38 0 0 1 163,127.9 L163.7,135.9 A46,46 0 0 0 189.8,125 Z"/><path class="mag1" d="M157,127.9 A38,38 0 0 1 135.4,118.9 L130.2,125 A46,46 0 0 0 156.3,135.9 Z"/><path class="mag2" d="M131.1,114.6 A38,38 0 0 1 122.1,93 L114.1,93.7 A46,46 0 0 0 125,119.8 Z"/><path class="mag1" d="M122.1,87 A38,38 0 0 1 131.1,65.4 L125,60.2 A46,46 0 0 0 114.1,86.3 Z"/><path class="mag2" d="M135.4,61.1 A38,38 0 0 1 157,52.1 L156.3,44.1 A46,46 0 0 0 130.2,55 Z"/><path class="mag1" d="M163,52.1 A38,38 0 0 1 184.6,61.1 L189.8,55 A46,46 0 0 0 163.7,44.1 Z"/><path class="mag2" d="M188.9,65.4 A38,38 0 0 1 197.9,87 L205.9,86.3 A46,46 0 0 0 195,60.2 Z"/><circle class="ax" cx="160" cy="90" r="12"/><path class="c1" d="M197.5,111.1 L219.3,123.4 Q224.5,126.3 219.7,133.8 A74,74 0 0 1 203.8,149.7 Q196.3,154.5 193.4,149.3 L181.1,127.5"/><path class="c1 thin" d="M194.7,115.4 L211.6,127.8 Q216.5,131.4 211.1,137.9 A70,70 0 0 1 207.9,141.1 Q201.4,146.5 197.8,141.6 L185.4,124.7"/><path class="c1" d="M171.6,131.4 L178.3,155.5 Q179.9,161.3 171.3,163.1 A74,74 0 0 1 148.7,163.1 Q140.1,161.3 141.7,155.5 L148.4,131.4"/><path class="c1 thin" d="M166.5,132.5 L169.7,153.3 Q170.6,159.2 162.3,160 A70,70 0 0 1 157.7,160 Q149.4,159.2 150.3,153.3 L153.5,132.5"/><path class="c1" d="M138.9,127.5 L126.6,149.3 Q123.7,154.5 116.2,149.7 A74,74 0 0 1 100.3,133.8 Q95.5,126.3 100.7,123.4 L122.5,111.1"/><path class="c1 thin" d="M134.6,124.7 L122.2,141.6 Q118.6,146.5 112.1,141.1 A70,70 0 0 1 108.9,137.9 Q103.5,131.4 108.4,127.8 L125.3,115.4"/><path class="c1" d="M118.6,101.6 L94.5,108.3 Q88.7,109.9 86.9,101.3 A74,74 0 0 1 86.9,78.7 Q88.7,70.1 94.5,71.7 L118.6,78.4"/><path class="c1 thin" d="M117.5,96.5 L96.7,99.7 Q90.8,100.6 90,92.3 A70,70 0 0 1 90,87.7 Q90.8,79.4 96.7,80.3 L117.5,83.5"/><path class="c1" d="M122.5,68.9 L100.7,56.6 Q95.5,53.7 100.3,46.2 A74,74 0 0 1 116.2,30.3 Q123.7,25.5 126.6,30.7 L138.9,52.5"/><path class="c1 thin" d="M125.3,64.6 L108.4,52.2 Q103.5,48.6 108.9,42.1 A70,70 0 0 1 112.1,38.9 Q118.6,33.5 122.2,38.4 L134.6,55.3"/><path class="c1" d="M148.4,48.6 L141.7,24.5 Q140.1,18.7 148.7,16.9 A74,74 0 0 1 171.3,16.9 Q179.9,18.7 178.3,24.5 L171.6,48.6"/><path class="c1 thin" d="M153.5,47.5 L150.3,26.7 Q149.4,20.8 157.7,20 A70,70 0 0 1 162.3,20 Q170.6,20.8 169.7,26.7 L166.5,47.5"/><path class="c1" d="M181.1,52.5 L193.4,30.7 Q196.3,25.5 203.8,30.3 A74,74 0 0 1 219.7,46.2 Q224.5,53.7 219.3,56.6 L197.5,68.9"/><path class="c1 thin" d="M185.4,55.3 L197.8,38.4 Q201.4,33.5 207.9,38.9 A70,70 0 0 1 211.1,42.1 Q216.5,48.6 211.6,52.2 L194.7,64.6"/><path class="c1" d="M201.4,78.4 L225.5,71.7 Q231.3,70.1 233.1,78.7 A74,74 0 0 1 233.1,101.3 Q231.3,109.9 225.5,108.3 L201.4,101.6"/><path class="c1 thin" d="M202.5,83.5 L223.3,80.3 Q229.2,79.4 230,87.7 A70,70 0 0 1 230,92.3 Q229.2,100.6 223.3,99.7 L202.5,96.5"/><text class="lbl" x="10" y="16">8-pole PMSM</text></svg></div>
+          <div class="case-body">
+            <p class="tool">Electric machines · Maxwell</p>
+            <h3>PMSM loss analysis for a high-speed industrial spindle</h3>
+            <div class="case-foot"><span class="metric">+3.2%</span><span class="metric-l">efficiency</span><span class="arrow" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+        <a class="case reveal" href="cases/pdn-optimization.html">
+          <div class="case-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="PDN impedance versus frequency, before and after optimisation" xmlns="http://www.w3.org/2000/svg"><line class="grid" x1="34" y1="54" x2="306" y2="54"/><line class="grid" x1="34" y1="86" x2="306" y2="86"/><line class="grid" x1="34" y1="118" x2="306" y2="118"/><line class="grid" x1="102" y1="22" x2="102" y2="150"/><line class="grid" x1="170" y1="22" x2="170" y2="150"/><line class="grid" x1="238" y1="22" x2="238" y2="150"/><path class="ax" d="M34,22 L34,150 L306,150"/><text class="lbl" x="306" y="166" text-anchor="end">frequency (log)</text><text class="lbl" x="40" y="26">|Z|</text><line class="lim" x1="34" y1="100" x2="306" y2="100"/><text class="lbl" x="42" y="95">target</text><path class="c2" d="M34,117 L35.4,117.1 L36.7,117.2 L38.1,117.3 L39.4,117.4 L40.8,117.5 L42.2,117.6 L43.5,117.7 L44.9,117.8 L46.2,117.9 L47.6,118 L49,118.1 L50.3,118.2 L51.7,118.3 L53,118.4 L54.4,118.5 L55.8,118.6 L57.1,118.7 L58.5,118.8 L59.8,118.9 L61.2,118.9 L62.6,119 L63.9,119.1 L65.3,119.2 L66.6,119.3 L68,119.4 L69.4,119.5 L70.7,119.6 L72.1,119.6 L73.4,119.7 L74.8,119.8 L76.2,119.9 L77.5,120 L78.9,120 L80.2,120.1 L81.6,120.1 L83,120.1 L84.3,120.1 L85.7,120.1 L87,119.9 L88.4,119.7 L89.8,119.4 L91.1,118.9 L92.5,118.3 L93.8,117.3 L95.2,116.1 L96.6,114.6 L97.9,112.7 L99.3,110.4 L100.6,107.7 L102,104.6 L103.4,101.2 L104.7,97.5 L106.1,93.7 L107.4,89.9 L108.8,86.3 L110.2,83 L111.5,80.3 L112.9,78.2 L114.2,76.9 L115.6,76.5 L117,77 L118.3,78.3 L119.7,80.5 L121,83.3 L122.4,86.6 L123.8,90.2 L125.1,94.1 L126.5,97.9 L127.8,101.6 L129.2,105.1 L130.6,108.2 L131.9,111 L133.3,113.3 L134.6,115.3 L136,116.9 L137.4,118.1 L138.7,119.1 L140.1,119.8 L141.4,120.3 L142.8,120.7 L144.2,120.9 L145.5,121.1 L146.9,121.1 L148.2,121.2 L149.6,121.2 L151,121.2 L152.3,121.1 L153.7,121.1 L155,121 L156.4,121 L157.8,120.9 L159.1,120.8 L160.5,120.8 L161.8,120.7 L163.2,120.6 L164.6,120.4 L165.9,120.3 L167.3,120.1 L168.6,120 L170,119.7 L171.4,119.4 L172.7,119 L174.1,118.5 L175.4,117.9 L176.8,117.1 L178.2,116.1 L179.5,114.8 L180.9,113.2 L182.2,111.3 L183.6,108.8 L185,105.9 L186.3,102.5 L187.7,98.5 L189,93.9 L190.4,88.7 L191.8,82.9 L193.1,76.7 L194.5,70.1 L195.8,63.2 L197.2,56.2 L198.6,49.3 L199.9,42.7 L201.3,36.6 L202.6,31.3 L204,26.8 L205.4,23.4 L206.7,21.3 L208.1,20.4 L209.4,20.8 L210.8,22.5 L212.2,25.4 L213.5,29.4 L214.9,34.3 L216.2,39.9 L217.6,46 L219,52.4 L220.3,58.9 L221.7,65.3 L223,71.4 L224.4,77.2 L225.8,82.4 L227.1,87.2 L228.5,91.3 L229.8,94.8 L231.2,97.8 L232.6,100.2 L233.9,102.1 L235.3,103.6 L236.6,104.7 L238,105.5 L239.4,106 L240.7,106.3 L242.1,106.4 L243.4,106.4 L244.8,106.3 L246.2,106.1 L247.5,105.8 L248.9,105.5 L250.2,105.1 L251.6,104.8 L253,104.4 L254.3,103.9 L255.7,103.5 L257,103.1 L258.4,102.6 L259.8,102.1 L261.1,101.7 L262.5,101.2 L263.8,100.7 L265.2,100.2 L266.6,99.7 L267.9,99.2 L269.3,98.7 L270.6,98.2 L272,97.7 L273.4,97.1 L274.7,96.6 L276.1,96 L277.4,95.5 L278.8,94.9 L280.2,94.3 L281.5,93.8 L282.9,93.2 L284.2,92.6 L285.6,92 L287,91.4 L288.3,90.7 L289.7,90.1 L291,89.5 L292.4,88.8 L293.8,88.2 L295.1,87.5 L296.5,86.9 L297.8,86.2 L299.2,85.5 L300.6,84.8 L301.9,84.1 L303.3,83.4 L304.6,82.7 L306,82"/><path class="c1" d="M34,130 L35.4,130 L36.7,130.1 L38.1,130.1 L39.4,130.2 L40.8,130.2 L42.2,130.3 L43.5,130.3 L44.9,130.4 L46.2,130.4 L47.6,130.5 L49,130.5 L50.3,130.6 L51.7,130.6 L53,130.7 L54.4,130.7 L55.8,130.8 L57.1,130.8 L58.5,130.9 L59.8,130.9 L61.2,131 L62.6,131 L63.9,131.1 L65.3,131.1 L66.6,131.1 L68,131.2 L69.4,131.2 L70.7,131.3 L72.1,131.3 L73.4,131.3 L74.8,131.4 L76.2,131.4 L77.5,131.4 L78.9,131.4 L80.2,131.5 L81.6,131.5 L83,131.5 L84.3,131.4 L85.7,131.4 L87,131.3 L88.4,131.2 L89.8,131.1 L91.1,131 L92.5,130.8 L93.8,130.6 L95.2,130.3 L96.6,130 L97.9,129.7 L99.3,129.3 L100.6,128.9 L102,128.4 L103.4,127.9 L104.7,127.3 L106.1,126.7 L107.4,126.1 L108.8,125.6 L110.2,125 L111.5,124.4 L112.9,123.9 L114.2,123.4 L115.6,123 L117,122.7 L118.3,122.5 L119.7,122.3 L121,122.3 L122.4,122.3 L123.8,122.5 L125.1,122.7 L126.5,123.1 L127.8,123.5 L129.2,124 L130.6,124.5 L131.9,125.1 L133.3,125.7 L134.6,126.3 L136,126.9 L137.4,127.5 L138.7,128 L140.1,128.5 L141.4,129 L142.8,129.5 L144.2,129.9 L145.5,130.2 L146.9,130.5 L148.2,130.7 L149.6,130.9 L151,131.1 L152.3,131.1 L153.7,131.2 L155,131.2 L156.4,131.2 L157.8,131.1 L159.1,130.9 L160.5,130.8 L161.8,130.6 L163.2,130.3 L164.6,130 L165.9,129.6 L167.3,129.2 L168.6,128.7 L170,128.1 L171.4,127.5 L172.7,126.9 L174.1,126.1 L175.4,125.4 L176.8,124.6 L178.2,123.7 L179.5,122.8 L180.9,121.9 L182.2,120.9 L183.6,120 L185,119.1 L186.3,118.2 L187.7,117.4 L189,116.6 L190.4,115.9 L191.8,115.3 L193.1,114.8 L194.5,114.4 L195.8,114.1 L197.2,114 L198.6,113.9 L199.9,114 L201.3,114.2 L202.6,114.5 L204,114.9 L205.4,115.4 L206.7,116 L208.1,116.6 L209.4,117.3 L210.8,118 L212.2,118.7 L213.5,119.4 L214.9,120.1 L216.2,120.8 L217.6,121.5 L219,122.1 L220.3,122.7 L221.7,123.2 L223,123.6 L224.4,124 L225.8,124.4 L227.1,124.7 L228.5,124.9 L229.8,125.1 L231.2,125.2 L232.6,125.3 L233.9,125.3 L235.3,125.3 L236.6,125.3 L238,125.2 L239.4,125.1 L240.7,125 L242.1,124.9 L243.4,124.7 L244.8,124.6 L246.2,124.4 L247.5,124.2 L248.9,124 L250.2,123.8 L251.6,123.6 L253,123.4 L254.3,123.2 L255.7,123 L257,122.8 L258.4,122.5 L259.8,122.3 L261.1,122 L262.5,121.8 L263.8,121.6 L265.2,121.3 L266.6,121 L267.9,120.8 L269.3,120.5 L270.6,120.3 L272,120 L273.4,119.7 L274.7,119.4 L276.1,119.2 L277.4,118.9 L278.8,118.6 L280.2,118.3 L281.5,118 L282.9,117.7 L284.2,117.4 L285.6,117.1 L287,116.8 L288.3,116.5 L289.7,116.1 L291,115.8 L292.4,115.5 L293.8,115.2 L295.1,114.8 L296.5,114.5 L297.8,114.1 L299.2,113.8 L300.6,113.4 L301.9,113.1 L303.3,112.7 L304.6,112.4 L306,112"/></svg></div>
+          <div class="case-body">
+            <p class="tool">PCB · SIwave</p>
+            <h3>PDN optimisation for a high-speed digital board</h3>
+            <div class="case-foot"><span class="metric">−34 dB</span><span class="metric-l">impedance peak</span><span class="arrow" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+        <a class="case reveal" href="cases/meander-antenna.html">
+          <div class="case-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Polar radiation pattern" xmlns="http://www.w3.org/2000/svg"><circle class="grid" cx="160" cy="92" r="26"/><circle class="grid" cx="160" cy="92" r="52"/><circle class="grid" cx="160" cy="92" r="78"/><line class="grid" x1="82" y1="92" x2="238" y2="92"/><line class="grid" x1="92.5" y1="53" x2="227.5" y2="131"/><line class="grid" x1="121" y1="24.5" x2="199" y2="159.5"/><line class="grid" x1="160" y1="14" x2="160" y2="170"/><line class="grid" x1="199" y1="24.5" x2="121" y2="159.5"/><line class="grid" x1="227.5" y1="53" x2="92.5" y2="131"/><polygon class="fill1" points="200.3,92 199.6,91.3 198.8,90.6 198,90 197,89.4 196,88.8 195,88.3 194,87.8 193,87.4 192,86.9 191.3,86.5 190.8,86 190.6,85.5 190.7,84.9 191.2,84.2 192.1,83.4 193.1,82.5 194.4,81.5 195.8,80.4 197.3,79.2 198.7,77.9 200.2,76.6 201.5,75.2 202.8,73.8 204.1,72.4 205.2,70.9 206.2,69.4 207.2,67.9 208.1,66.4 208.9,64.9 209.6,63.4 210.2,61.8 210.7,60.3 211.2,58.7 211.6,57.2 211.9,55.6 212.2,54.1 212.4,52.5 212.5,51 212.5,49.5 212.5,48 212.4,46.5 212.2,45 212,43.5 211.7,42.1 211.3,40.7 210.9,39.3 210.4,37.9 209.9,36.6 209.3,35.3 208.6,34.1 207.9,32.9 207.1,31.7 206.3,30.6 205.4,29.5 204.5,28.5 203.5,27.6 202.4,26.7 201.4,25.8 200.2,25 199.1,24.3 197.9,23.7 196.6,23.1 195.4,22.6 194.1,22.1 192.8,21.8 191.4,21.5 190,21.2 188.7,21.1 187.3,21 185.9,20.9 184.5,21 183,21.1 181.6,21.3 180.2,21.6 178.8,21.9 177.4,22.3 176,22.7 174.6,23.3 173.2,23.9 171.9,24.5 170.6,25.3 169.3,26.1 168,26.9 166.7,27.9 165.5,28.8 164.3,29.9 163.2,31 162.1,32.2 161,33.4 160,34.8 159,36.1 158.1,37.6 157.2,39.1 156.4,40.7 155.7,42.3 155,44 154.3,45.8 153.8,47.6 153.3,49.5 152.8,51.4 152.5,53.3 152.2,55.1 151.9,56.9 151.7,58.5 151.4,59.9 151.1,61.1 150.8,61.9 150.3,62.3 149.8,62.4 149.1,62.1 148.4,61.7 147.5,61.1 146.6,60.5 145.7,59.8 144.7,59.2 143.7,58.6 142.7,58.1 141.8,57.7 140.8,57.4 139.9,57.1 139,57 138.1,56.9 137.2,57 136.5,57.1 135.7,57.3 135,57.6 134.4,58 133.8,58.5 133.3,59 132.9,59.7 132.5,60.4 132.2,61.1 132,62 131.9,62.9 131.9,63.9 132,64.9 132.2,66 132.5,67.2 132.9,68.4 133.5,69.7 134.1,71.1 135,72.4 135.9,73.9 137,75.3 138.1,76.7 139.4,78.1 140.5,79.3 141.5,80.5 142.2,81.3 142.5,81.9 142.2,82.1 141.4,82.1 140.1,81.9 138.6,81.6 136.9,81.2 135.1,80.9 133.4,80.7 131.7,80.5 130,80.5 128.5,80.5 127.1,80.7 125.8,80.9 124.7,81.2 123.6,81.6 122.7,82 121.8,82.5 121.1,83 120.5,83.6 120,84.2 119.6,84.9 119.3,85.6 119.1,86.3 119.1,87 119.1,87.7 119.3,88.4 119.5,89.2 119.9,89.9 120.5,90.6 121.1,91.3 121.9,92 122.8,92.6 123.9,93.3 125.1,93.8 126.5,94.3 128.1,94.8 129.9,95.2 131.9,95.4 134.2,95.6 136.8,95.7 139.6,95.6 142.8,95.3 146.2,94.9 149.5,94.4 152.4,93.9 153.9,93.6 153.3,93.9 151.1,94.7 148,95.9 144.9,97.2 141.9,98.6 139.3,99.9 137,101.3 135,102.6 133.4,103.9 131.9,105.1 130.7,106.3 129.7,107.4 128.9,108.5 128.2,109.6 127.8,110.6 127.4,111.6 127.2,112.5 127.1,113.4 127.1,114.2 127.2,114.9 127.5,115.6 127.8,116.2 128.3,116.8 128.8,117.3 129.4,117.7 130.1,118 130.9,118.2 131.8,118.3 132.8,118.3 133.8,118.2 135,117.9 136.2,117.5 137.6,116.9 139,116.1 140.6,115.2 142.2,113.9 144.1,112.4 146.1,110.5 148.3,108.1 150.8,105.1 153.8,101.2 157.4,96 157.6,95.9 157.6,95.9 157.7,96 157.8,96 157.9,96 157.8,96.2 155.1,102 153.2,106.5 151.9,110.2 151,113.3 150.3,116 149.9,118.3 149.7,120.4 149.6,122.2 149.6,123.9 149.8,125.3 150.1,126.6 150.4,127.7 150.8,128.7 151.3,129.5 151.9,130.3 152.4,130.8 153.1,131.3 153.7,131.7 154.4,131.9 155.1,132 155.8,132 156.5,131.8 157.2,131.6 157.9,131.2 158.6,130.7 159.3,130 160,129.2 160.6,128.3 161.2,127.2 161.8,125.9 162.3,124.5 162.7,122.9 163,121 163.3,118.9 163.5,116.6 163.5,113.9 163.3,111 163.1,107.7 162.6,104.3 162.1,101.1 161.7,98.8 161.6,98.1 162.2,99.5 163.1,102.3 164.4,105.4 165.7,108.6 167.1,111.4 168.4,113.9 169.7,116.1 171,118 172.3,119.6 173.5,121 174.7,122.2 175.9,123.1 177,123.9 178,124.5 179.1,125 180,125.4 181,125.6 181.9,125.7 182.7,125.6 183.5,125.5 184.2,125.3 184.8,124.9 185.4,124.5 185.9,124 186.4,123.4 186.7,122.8 187,122 187.2,121.2 187.3,120.3 187.3,119.3 187.2,118.3 187,117.2 186.7,116 186.2,114.8 185.7,113.5 184.9,112.2 184.1,110.8 183.1,109.4 182,108 180.9,106.6 179.7,105.3 178.7,104.1 177.9,103.2 177.4,102.5 177.5,102.1 178.1,102.1 179.2,102.2 180.7,102.5 182.4,102.9 184.2,103.3 186,103.6 187.8,103.8 189.5,103.9 191.1,103.9 192.6,103.8 193.9,103.7 195.2,103.4 196.4,103.1 197.4,102.7 198.4,102.3 199.2,101.8 200,101.2 200.6,100.6 201.1,100 201.6,99.3 201.9,98.6 202.1,97.9 202.2,97.2 202.3,96.4 202.2,95.7 202,94.9 201.7,94.2 201.3,93.4 200.9,92.7 200.3,92"/><polygon class="c1" points="200.3,92 199.6,91.3 198.8,90.6 198,90 197,89.4 196,88.8 195,88.3 194,87.8 193,87.4 192,86.9 191.3,86.5 190.8,86 190.6,85.5 190.7,84.9 191.2,84.2 192.1,83.4 193.1,82.5 194.4,81.5 195.8,80.4 197.3,79.2 198.7,77.9 200.2,76.6 201.5,75.2 202.8,73.8 204.1,72.4 205.2,70.9 206.2,69.4 207.2,67.9 208.1,66.4 208.9,64.9 209.6,63.4 210.2,61.8 210.7,60.3 211.2,58.7 211.6,57.2 211.9,55.6 212.2,54.1 212.4,52.5 212.5,51 212.5,49.5 212.5,48 212.4,46.5 212.2,45 212,43.5 211.7,42.1 211.3,40.7 210.9,39.3 210.4,37.9 209.9,36.6 209.3,35.3 208.6,34.1 207.9,32.9 207.1,31.7 206.3,30.6 205.4,29.5 204.5,28.5 203.5,27.6 202.4,26.7 201.4,25.8 200.2,25 199.1,24.3 197.9,23.7 196.6,23.1 195.4,22.6 194.1,22.1 192.8,21.8 191.4,21.5 190,21.2 188.7,21.1 187.3,21 185.9,20.9 184.5,21 183,21.1 181.6,21.3 180.2,21.6 178.8,21.9 177.4,22.3 176,22.7 174.6,23.3 173.2,23.9 171.9,24.5 170.6,25.3 169.3,26.1 168,26.9 166.7,27.9 165.5,28.8 164.3,29.9 163.2,31 162.1,32.2 161,33.4 160,34.8 159,36.1 158.1,37.6 157.2,39.1 156.4,40.7 155.7,42.3 155,44 154.3,45.8 153.8,47.6 153.3,49.5 152.8,51.4 152.5,53.3 152.2,55.1 151.9,56.9 151.7,58.5 151.4,59.9 151.1,61.1 150.8,61.9 150.3,62.3 149.8,62.4 149.1,62.1 148.4,61.7 147.5,61.1 146.6,60.5 145.7,59.8 144.7,59.2 143.7,58.6 142.7,58.1 141.8,57.7 140.8,57.4 139.9,57.1 139,57 138.1,56.9 137.2,57 136.5,57.1 135.7,57.3 135,57.6 134.4,58 133.8,58.5 133.3,59 132.9,59.7 132.5,60.4 132.2,61.1 132,62 131.9,62.9 131.9,63.9 132,64.9 132.2,66 132.5,67.2 132.9,68.4 133.5,69.7 134.1,71.1 135,72.4 135.9,73.9 137,75.3 138.1,76.7 139.4,78.1 140.5,79.3 141.5,80.5 142.2,81.3 142.5,81.9 142.2,82.1 141.4,82.1 140.1,81.9 138.6,81.6 136.9,81.2 135.1,80.9 133.4,80.7 131.7,80.5 130,80.5 128.5,80.5 127.1,80.7 125.8,80.9 124.7,81.2 123.6,81.6 122.7,82 121.8,82.5 121.1,83 120.5,83.6 120,84.2 119.6,84.9 119.3,85.6 119.1,86.3 119.1,87 119.1,87.7 119.3,88.4 119.5,89.2 119.9,89.9 120.5,90.6 121.1,91.3 121.9,92 122.8,92.6 123.9,93.3 125.1,93.8 126.5,94.3 128.1,94.8 129.9,95.2 131.9,95.4 134.2,95.6 136.8,95.7 139.6,95.6 142.8,95.3 146.2,94.9 149.5,94.4 152.4,93.9 153.9,93.6 153.3,93.9 151.1,94.7 148,95.9 144.9,97.2 141.9,98.6 139.3,99.9 137,101.3 135,102.6 133.4,103.9 131.9,105.1 130.7,106.3 129.7,107.4 128.9,108.5 128.2,109.6 127.8,110.6 127.4,111.6 127.2,112.5 127.1,113.4 127.1,114.2 127.2,114.9 127.5,115.6 127.8,116.2 128.3,116.8 128.8,117.3 129.4,117.7 130.1,118 130.9,118.2 131.8,118.3 132.8,118.3 133.8,118.2 135,117.9 136.2,117.5 137.6,116.9 139,116.1 140.6,115.2 142.2,113.9 144.1,112.4 146.1,110.5 148.3,108.1 150.8,105.1 153.8,101.2 157.4,96 157.6,95.9 157.6,95.9 157.7,96 157.8,96 157.9,96 157.8,96.2 155.1,102 153.2,106.5 151.9,110.2 151,113.3 150.3,116 149.9,118.3 149.7,120.4 149.6,122.2 149.6,123.9 149.8,125.3 150.1,126.6 150.4,127.7 150.8,128.7 151.3,129.5 151.9,130.3 152.4,130.8 153.1,131.3 153.7,131.7 154.4,131.9 155.1,132 155.8,132 156.5,131.8 157.2,131.6 157.9,131.2 158.6,130.7 159.3,130 160,129.2 160.6,128.3 161.2,127.2 161.8,125.9 162.3,124.5 162.7,122.9 163,121 163.3,118.9 163.5,116.6 163.5,113.9 163.3,111 163.1,107.7 162.6,104.3 162.1,101.1 161.7,98.8 161.6,98.1 162.2,99.5 163.1,102.3 164.4,105.4 165.7,108.6 167.1,111.4 168.4,113.9 169.7,116.1 171,118 172.3,119.6 173.5,121 174.7,122.2 175.9,123.1 177,123.9 178,124.5 179.1,125 180,125.4 181,125.6 181.9,125.7 182.7,125.6 183.5,125.5 184.2,125.3 184.8,124.9 185.4,124.5 185.9,124 186.4,123.4 186.7,122.8 187,122 187.2,121.2 187.3,120.3 187.3,119.3 187.2,118.3 187,117.2 186.7,116 186.2,114.8 185.7,113.5 184.9,112.2 184.1,110.8 183.1,109.4 182,108 180.9,106.6 179.7,105.3 178.7,104.1 177.9,103.2 177.4,102.5 177.5,102.1 178.1,102.1 179.2,102.2 180.7,102.5 182.4,102.9 184.2,103.3 186,103.6 187.8,103.8 189.5,103.9 191.1,103.9 192.6,103.8 193.9,103.7 195.2,103.4 196.4,103.1 197.4,102.7 198.4,102.3 199.2,101.8 200,101.2 200.6,100.6 201.1,100 201.6,99.3 201.9,98.6 202.1,97.9 202.2,97.2 202.3,96.4 202.2,95.7 202,94.9 201.7,94.2 201.3,93.4 200.9,92.7 200.3,92"/><text class="lbl" x="164" y="167">0 dB</text><text class="lbl" x="164" y="141">−10</text><text class="lbl" x="164" y="115">−20</text><text class="lbl" x="10" y="16">E-plane gain</text></svg></div>
+          <div class="case-body">
+            <p class="tool">RF &amp; antenna · openEMS + ML</p>
+            <h3>Interactive surrogate model for meander-line PCB antenna design</h3>
+            <div class="case-foot"><span class="metric">288</span><span class="metric-l">FDTD solves behind an instant GUI</span><span class="arrow" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+        <a class="case reveal" href="cases/ct-tamper.html">
+          <div class="case-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Metering error versus tamper-magnet distance with accuracy-class band" xmlns="http://www.w3.org/2000/svg"><line class="grid" x1="34" y1="54" x2="306" y2="54"/><line class="grid" x1="34" y1="86" x2="306" y2="86"/><line class="grid" x1="34" y1="118" x2="306" y2="118"/><line class="grid" x1="102" y1="22" x2="102" y2="150"/><line class="grid" x1="170" y1="22" x2="170" y2="150"/><line class="grid" x1="238" y1="22" x2="238" y2="150"/><path class="ax" d="M34,22 L34,150 L306,150"/><text class="lbl" x="306" y="166" text-anchor="end">magnet distance</text><text class="lbl" x="40" y="26">error</text><rect class="band" x="34" y="92" width="272" height="24"/><text class="lbl" x="306" y="88" text-anchor="end">class 0.5</text><path class="c1" d="M34,12.1 L35.4,12.1 L36.7,12.1 L38.1,12.1 L39.4,12.2 L40.8,12.2 L42.2,12.2 L43.5,12.2 L44.9,12.2 L46.2,12.3 L47.6,12.3 L49,12.3 L50.3,12.3 L51.7,12.4 L53,12.4 L54.4,12.5 L55.8,12.5 L57.1,12.6 L58.5,12.6 L59.8,12.7 L61.2,12.8 L62.6,12.8 L63.9,12.9 L65.3,13 L66.6,13.1 L68,13.2 L69.4,13.4 L70.7,13.5 L72.1,13.7 L73.4,13.8 L74.8,14 L76.2,14.2 L77.5,14.4 L78.9,14.7 L80.2,15 L81.6,15.3 L83,15.6 L84.3,16 L85.7,16.4 L87,16.8 L88.4,17.3 L89.8,17.8 L91.1,18.4 L92.5,19 L93.8,19.7 L95.2,20.4 L96.6,21.2 L97.9,22 L99.3,23 L100.6,24 L102,25.1 L103.4,26.2 L104.7,27.5 L106.1,28.8 L107.4,30.2 L108.8,31.7 L110.2,33.3 L111.5,35 L112.9,36.7 L114.2,38.6 L115.6,40.5 L117,42.5 L118.3,44.6 L119.7,46.7 L121,48.9 L122.4,51.2 L123.8,53.4 L125.1,55.7 L126.5,58 L127.8,60.3 L129.2,62.6 L130.6,64.8 L131.9,67.1 L133.3,69.3 L134.6,71.4 L136,73.5 L137.4,75.5 L138.7,77.4 L140.1,79.3 L141.4,81 L142.8,82.7 L144.2,84.3 L145.5,85.8 L146.9,87.2 L148.2,88.5 L149.6,89.8 L151,90.9 L152.3,92 L153.7,93 L155,94 L156.4,94.8 L157.8,95.6 L159.1,96.3 L160.5,97 L161.8,97.6 L163.2,98.2 L164.6,98.7 L165.9,99.2 L167.3,99.6 L168.6,100 L170,100.4 L171.4,100.7 L172.7,101 L174.1,101.3 L175.4,101.6 L176.8,101.8 L178.2,102 L179.5,102.2 L180.9,102.3 L182.2,102.5 L183.6,102.6 L185,102.8 L186.3,102.9 L187.7,103 L189,103.1 L190.4,103.2 L191.8,103.2 L193.1,103.3 L194.5,103.4 L195.8,103.4 L197.2,103.5 L198.6,103.5 L199.9,103.6 L201.3,103.6 L202.6,103.7 L204,103.7 L205.4,103.7 L206.7,103.7 L208.1,103.8 L209.4,103.8 L210.8,103.8 L212.2,103.8 L213.5,103.8 L214.9,103.9 L216.2,103.9 L217.6,103.9 L219,103.9 L220.3,103.9 L221.7,103.9 L223,103.9 L224.4,103.9 L225.8,103.9 L227.1,103.9 L228.5,103.9 L229.8,104 L231.2,104 L232.6,104 L233.9,104 L235.3,104 L236.6,104 L238,104 L239.4,104 L240.7,104 L242.1,104 L243.4,104 L244.8,104 L246.2,104 L247.5,104 L248.9,104 L250.2,104 L251.6,104 L253,104 L254.3,104 L255.7,104 L257,104 L258.4,104 L259.8,104 L261.1,104 L262.5,104 L263.8,104 L265.2,104 L266.6,104 L267.9,104 L269.3,104 L270.6,104 L272,104 L273.4,104 L274.7,104 L276.1,104 L277.4,104 L278.8,104 L280.2,104 L281.5,104 L282.9,104 L284.2,104 L285.6,104 L287,104 L288.3,104 L289.7,104 L291,104 L292.4,104 L293.8,104 L295.1,104 L296.5,104 L297.8,104 L299.2,104 L300.6,104 L301.9,104 L303.3,104 L304.6,104 L306,104"/><line class="lim" x1="152.3" y1="22" x2="152.3" y2="150"/><circle class="mark" cx="152.3" cy="92" r="5"/><text class="lbl" x="160.3" y="38">safe standoff</text></svg></div>
+          <div class="case-body">
+            <p class="tool">EMC / tamper security · ML surrogate</p>
+            <h3>Magnetic tamper-immunity surrogate for revenue-metering CTs</h3>
+            <div class="case-foot"><span class="metric">2.37%</span><span class="metric-l">held-out surrogate error</span><span class="arrow" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+        <a class="case reveal" href="cases/rogowski-sensor.html">
+          <div class="case-fig"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Histogram of sensor ratio error across manufacturing tolerances" xmlns="http://www.w3.org/2000/svg"><line class="grid" x1="34" y1="54" x2="306" y2="54"/><line class="grid" x1="34" y1="86" x2="306" y2="86"/><line class="grid" x1="34" y1="118" x2="306" y2="118"/><line class="grid" x1="102" y1="22" x2="102" y2="150"/><line class="grid" x1="170" y1="22" x2="170" y2="150"/><line class="grid" x1="238" y1="22" x2="238" y2="150"/><path class="ax" d="M34,22 L34,150 L306,150"/><text class="lbl" x="306" y="166" text-anchor="end">ratio error</text><text class="lbl" x="40" y="26">count</text><rect class="bar2" x="44.6" y="148.3" width="6.2" height="1.7"/><rect class="bar2" x="52" y="148.7" width="6.2" height="1.3"/><rect class="bar2" x="59.4" y="148.7" width="6.2" height="1.3"/><rect class="bar2" x="66.8" y="148.7" width="6.2" height="1.3"/><rect class="bar2" x="74.2" y="144.3" width="6.2" height="5.7"/><rect class="bar2" x="81.7" y="142" width="6.2" height="8"/><rect class="bar" x="89.1" y="140.3" width="6.2" height="9.7"/><rect class="bar" x="96.5" y="134.2" width="6.2" height="15.8"/><rect class="bar" x="103.9" y="123.2" width="6.2" height="26.8"/><rect class="bar" x="111.3" y="118.8" width="6.2" height="31.2"/><rect class="bar" x="118.7" y="105.1" width="6.2" height="44.9"/><rect class="bar" x="126.1" y="84.9" width="6.2" height="65.1"/><rect class="bar" x="133.5" y="81.2" width="6.2" height="68.8"/><rect class="bar" x="141" y="60.5" width="6.2" height="89.5"/><rect class="bar" x="148.4" y="65.8" width="6.2" height="84.2"/><rect class="bar" x="155.8" y="40" width="6.2" height="110"/><rect class="bar" x="163.2" y="45.7" width="6.2" height="104.3"/><rect class="bar" x="170.6" y="43.4" width="6.2" height="106.6"/><rect class="bar" x="178" y="49.7" width="6.2" height="100.3"/><rect class="bar" x="185.4" y="63.8" width="6.2" height="86.2"/><rect class="bar" x="192.8" y="62.5" width="6.2" height="87.5"/><rect class="bar" x="200.2" y="77.9" width="6.2" height="72.1"/><rect class="bar" x="207.7" y="90" width="6.2" height="60"/><rect class="bar" x="215.1" y="104.1" width="6.2" height="45.9"/><rect class="bar" x="222.5" y="113.8" width="6.2" height="36.2"/><rect class="bar" x="229.9" y="125.5" width="6.2" height="24.5"/><rect class="bar" x="237.3" y="130.2" width="6.2" height="19.8"/><rect class="bar" x="244.7" y="136.6" width="6.2" height="13.4"/><rect class="bar2" x="252.1" y="142" width="6.2" height="8"/><rect class="bar2" x="259.5" y="145" width="6.2" height="5"/><rect class="bar2" x="267" y="147" width="6.2" height="3"/><rect class="bar2" x="274.4" y="149.3" width="6.2" height="0.7"/><rect class="bar2" x="281.8" y="149" width="6.2" height="1"/><rect class="bar2" x="289.2" y="149.3" width="6.2" height="0.7"/><line class="lim" x1="88.5" y1="28" x2="88.5" y2="150"/><line class="lim" x1="251.5" y1="28" x2="251.5" y2="150"/><text class="lbl" x="306" y="26" text-anchor="end">class limits</text></svg></div>
+          <div class="case-body">
+            <p class="tool">Sensor tolerancing · ML surrogate</p>
+            <h3>Manufacturing-tolerance surrogate for Rogowski-coil sensors</h3>
+            <div class="case-foot"><span class="metric">1.92%</span><span class="metric-l">held-out surrogate error</span><span class="arrow" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+      </div>
     </div>
-    <p class="cases-note">Client engagements anonymized — no client names disclosed. Independent projects are self-directed, built end-to-end.</p>
   </section>
-
-  <hr class="divider">
 
   <!-- ABOUT -->
   <section id="about" class="section">
-    <p class="eyebrow">About</p>
-    <h2>The person <span>behind the simulations</span></h2>
-    <div class="about-inner">
-      <img class="about-photo" src="IMG_1537.jpeg" alt="Dr. Andreas Doukas">
+    <div class="wrap about">
+      <figure class="about-photo reveal">
+        <img src="IMG_1537.jpeg" alt="Dr. Andreas Doukas" loading="lazy">
+        <figcaption>Dr. Andreas Doukas · Slovenia, EU</figcaption>
+      </figure>
       <div class="about-text">
-        <p class="about-body">I am a PhD physicist with a career built around thermal and electromagnetic simulation. My background includes years of experience as a Senior R&D engineer and Lead Development Engineer for top smart technology and motor companies. Now, I bring this deep industry expertise directly to my independent clients.</p>
-        <p class="about-body">My core toolset is Ansys Electronics Desktop — Maxwell, HFSS, Icepak, SIwave — complemented by Python and PyAEDT for parametric automation and design optimization. I take on freelance projects where precision and physical rigor matter.</p>
+        <p class="eyebrow"><span class="num">04</span>About</p>
+        <h2>The person behind the simulations</h2>
+        <p>PhD physicist and former Senior R&amp;D / Lead Development Engineer in industry, now working independently on projects where physical rigour matters.</p>
+        <dl class="facts">
+          <div><dt>Education</dt><dd>PhD, Theoretical Physics, Jožef Stefan Institute, Ljubljana</dd></div>
+          <div><dt>Speaking</dt><dd>CADFEM World Conference 2026</dd></div>
+          <div><dt>Toolset</dt><dd>Ansys Electronics Desktop · Python · PyAEDT · openEMS</dd></div>
+        </dl>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- CONTACT -->
-  <section id="contact" class="contact-section">
-    <p class="eyebrow">Get in touch</p>
-    <h2>Start a <span>conversation</span></h2>
-    <p class="contact-sub">Describe your project briefly — I'll respond within 24 hours with an assessment.</p>
-    <form class="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
-      <input type="text" name="name" placeholder="Your name" required>
-      <input type="email" name="email" placeholder="Email address" required>
-      <select name="subject" required>
-        <option value="" disabled selected>Service area</option>
-        <option>RF & Microwave (HFSS)</option>
-        <option>PCB Signal & Power Integrity (SIwave)</option>
-        <option>Thermal Management (Icepak)</option>
-        <option>EM Machines (Maxwell)</option>
-        <option>EMC / EMI Analysis</option>
-        <option>Other / Not sure</option>
-      </select>
-      <textarea name="message" placeholder="Brief project description..." rows="5" required></textarea>
-      <div>
-        <button type="submit" class="cta">Send message</button>
-        <p class="form-note">Your details are used only to respond to your enquiry.</p>
+  <section id="contact" class="section section-dark contact">
+    <div class="wrap contact-inner">
+      <div class="contact-text">
+        <p class="eyebrow on-dark"><span class="num">05</span>Contact</p>
+        <h2>Start a conversation</h2>
+        <p>Tell me briefly what you're working on.</p>
+        <ul class="contact-points">
+          <li>Reply within 24 hours</li>
+          <li>Confidential: client work is never named</li>
+          <li>Based in Slovenia, EU</li>
+        </ul>
       </div>
-    </form>
+      <form class="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <div class="row">
+          <label><span>Name</span><input type="text" name="name" autocomplete="name" required></label>
+          <label><span>Email</span><input type="email" name="email" autocomplete="email" required></label>
+        </div>
+        <label><span>Service area</span>
+          <select name="subject" required>
+            <option value="" disabled selected>Select…</option>
+            <option>RF &amp; Microwave (HFSS)</option>
+            <option>PCB Signal &amp; Power Integrity (SIwave)</option>
+            <option>Thermal Management (Icepak)</option>
+            <option>Electric Machines (Maxwell)</option>
+            <option>EMC / EMI Analysis</option>
+            <option>Automation &amp; ML surrogates</option>
+            <option>Other / Not sure</option>
+          </select>
+        </label>
+        <label><span>Project description</span><textarea name="message" rows="5" placeholder="What are you designing, and what question should simulation answer?" required></textarea></label>
+        <div class="form-foot">
+          <button type="submit" class="btn btn-primary">Send message</button>
+          <p class="form-note">Your details are used only to respond to your enquiry.</p>
+        </div>
+      </form>
+    </div>
   </section>
 
   <!-- FOOTER -->
-  <footer id="footer">
-    <span>© 2026 Andreas Doukas s.p. · Slovenia, EU</span>
-    <span>EM & thermal simulation consulting</span>
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="#top" aria-label="Andreas Doukas — back to top"><svg class="mono" viewBox="0 0 104 74" aria-hidden="true"><path d="M4,70 L30,6 L56,70" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M34,46 L43.8,70" stroke="#5a80c8" stroke-width="5"/><path d="M40,6 H70 A32,32 0 0 1 70,70 H60" fill="none" stroke="currentColor" stroke-width="5"/></svg><span class="wordmark"><span class="wm-name">Andreas Doukas</span><span class="wm-tag">Simulation · Optimization · Performance</span></span></a>
+      <p>© 2026 Andreas Doukas s.p. · Slovenia, EU</p>
+      <p>EM &amp; thermal simulation consulting</p>
+    </div>
   </footer>
 
-  <script>
-    // Active nav link — based on scroll position, not intersection ratio
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-links a');
-    function updateNav() {
-      const scrollY = window.scrollY;
-      const navH = document.getElementById('nav').offsetHeight;
-      const atBottom = scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
-
-      let current = atBottom
-        ? sections[sections.length - 1].id
-        : sections[0].id;
-
-      if (!atBottom) {
-        sections.forEach(section => {
-          if (scrollY >= section.offsetTop - navH - 8) current = section.id;
-        });
-      }
-
-      navLinks.forEach(link => {
-        link.classList.toggle('active', link.getAttribute('href') === '#' + current);
-      });
-    }
-    window.addEventListener('scroll', updateNav, { passive: true });
-    updateNav();
-  </script>
+  <script src="js/field.js" defer></script>
+  <script src="js/site.js" defer></script>
 </body>
 </html>

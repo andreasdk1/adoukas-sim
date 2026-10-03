@@ -4,24 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Power converter thermal optimization – Andreas Doukas</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="case.css">
+  <script>document.documentElement.classList.add('js')</script>
 </head>
-<body>
+<body class="case-page">
 
-<nav>
-  <a class="nav-logo" href="../index.html">
-    <img src="../assets/logo-nav-light.svg" height="36" alt="Andreas Doukas">
-  </a>
-  <a class="nav-back" href="../index.html#case-studies">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#5c6bc0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    All case studies
-  </a>
-</nav>
+<header id="nav" class="nav on-dark">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html" aria-label="Andreas Doukas — home"><svg class="mono" viewBox="0 0 104 74" aria-hidden="true"><path d="M4,70 L30,6 L56,70" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M34,46 L43.8,70" stroke="#5a80c8" stroke-width="5"/><path d="M40,6 H70 A32,32 0 0 1 70,70 H60" fill="none" stroke="currentColor" stroke-width="5"/></svg><span class="wordmark"><span class="wm-name">Andreas Doukas</span><span class="wm-tag">Simulation · Optimization · Performance</span></span></a>
+    <a class="nav-back" href="../index.html#case-studies">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      All <span>case studies</span>
+    </a>
+  </div>
+</header>
 
-<header class="case-header">
-  <span class="case-tag" style="background:#fff3e0;color:#e65100">Thermal Management · Icepak</span>
-  <h1>Power converter thermal optimization for EV drivetrain</h1>
-  <div class="case-meta">
+<section class="case-hero">
+  <div class="wrap case-hero-inner">
+    <div>
+      <span class="case-tag">Thermal Management · Icepak</span>
+      <h1>Power converter thermal optimization for EV drivetrain</h1>
+    </div>
+    <div class="case-fig" aria-hidden="true"><svg class="plot" viewBox="0 0 320 180" role="img" aria-label="Thermal map of a circuit board with hotspots" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="hs0"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><radialGradient id="hs1"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><radialGradient id="hs2"><stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="0.25" stop-color="#f7a440" stop-opacity="0.95"/><stop offset="0.55" stop-color="#d9483b" stop-opacity="0.7"/><stop offset="0.8" stop-color="#6b2a6e" stop-opacity="0.35"/><stop offset="1" stop-color="#1a1640" stop-opacity="0"/></radialGradient><linearGradient id="cbar" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#1a1640"/><stop offset="0.3" stop-color="#6b2a6e"/><stop offset="0.55" stop-color="#d9483b"/><stop offset="0.8" stop-color="#f7a440"/><stop offset="1" stop-color="#ffe9a8"/></linearGradient><clipPath id="brd"><rect x="22" y="20" width="248" height="140" rx="4"/></clipPath></defs><g clip-path="url(#brd)"><rect x="22" y="20" width="248" height="140" fill="#1a1640"/><circle cx="110" cy="82" r="92" fill="url(#hs0)"/><circle cx="205" cy="118" r="70" fill="url(#hs1)"/><circle cx="196" cy="48" r="52" fill="url(#hs2)"/><ellipse class="iso" cx="110" cy="82" rx="25.299999999999997" ry="22"/><ellipse class="iso" cx="110" cy="82" rx="50.599999999999994" ry="44"/><ellipse class="iso" cx="205" cy="118" rx="20.7" ry="18"/><ellipse class="iso" cx="205" cy="118" rx="41.4" ry="36"/></g><rect class="comp" x="92" y="66" width="36" height="32" rx="1.5"/><rect class="comp" x="190" y="104" width="30" height="28" rx="1.5"/><rect class="comp" x="184" y="38" width="24" height="20" rx="1.5"/><rect class="comp" x="40" y="120" width="30" height="22" rx="1.5"/><rect class="comp" x="40" y="34" width="22" height="40" rx="1.5"/><rect x="284" y="20" width="10" height="140" rx="2" fill="url(#cbar)"/><text class="lbl" x="300" y="27">hot</text><text class="lbl" x="300" y="160">amb</text></svg></div>
+    <div class="case-meta">
     <div class="meta-item">
       <p class="meta-label">Tool</p>
       <p class="meta-value">Ansys Icepak</p>
@@ -35,7 +45,8 @@
       <p class="meta-value">−18°C max junction temperature</p>
     </div>
   </div>
-</header>
+  </div>
+</section>
 
 <main class="case-body">
 
@@ -82,10 +93,25 @@
 
 </main>
 
-<footer>
-  <span>© 2026 Andreas Doukas s.p. · Slovenia, EU</span>
-  <span>EM & thermal simulation consulting</span>
+<section class="case-cta">
+  <div class="wrap">
+    <h2>Have a similar problem on your bench?</h2>
+    <div class="actions">
+      <a class="btn btn-primary" href="../index.html#contact">Start a conversation</a>
+      <a class="btn btn-ghost" href="../index.html#case-studies">More case studies <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <a class="brand" href="../index.html" aria-label="Andreas Doukas — home"><svg class="mono" viewBox="0 0 104 74" aria-hidden="true"><path d="M4,70 L30,6 L56,70" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M34,46 L43.8,70" stroke="#5a80c8" stroke-width="5"/><path d="M40,6 H70 A32,32 0 0 1 70,70 H60" fill="none" stroke="currentColor" stroke-width="5"/></svg><span class="wordmark"><span class="wm-name">Andreas Doukas</span><span class="wm-tag">Simulation · Optimization · Performance</span></span></a>
+    <p>© 2026 Andreas Doukas s.p. · Slovenia, EU</p>
+    <p>EM &amp; thermal simulation consulting</p>
+  </div>
 </footer>
+
+<script src="../js/site.js" defer></script>
 
 </body>
 </html>
