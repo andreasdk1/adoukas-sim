@@ -52,7 +52,7 @@
     </div>
     <div class="meta-item">
       <p class="meta-label">Result</p>
-      <p class="meta-value">+22 % peak torque, same envelope, FEA-verified</p>
+      <p class="meta-value">+22 % peak torque in the same envelope</p>
     </div>
   </div>
   </div>
@@ -62,12 +62,12 @@
 
   <div class="metric-block">
     <span class="metric-number">+22 %</span>
-    <span class="metric-label">Peak torque from the same 248 mm rotor (129 → 157 Nm, hot magnets, FEA-verified), with drive-cycle efficiency up from 91.4 % to 92.2 % and the winding no hotter at the 4 kW rating.</span>
+    <span class="metric-label">Peak torque from the same 248 mm rotor (129 → 157 Nm, hot magnets), with drive-cycle efficiency up from 91.4 % to 92.2 % and the winding no hotter at the 4 kW rating.</span>
   </div>
 
   <dl class="physics-box">
     <div><dt>Physics</dt><dd>Nonlinear 2D finite-element magnetics with a moving band, cross-checked against the independent GetDP solver to 0.001 % on torque. Drive (6-step, SPWM, SVPWM), iron and eddy losses, a thermal network, airgap-force NVH and a demagnetisation check all run on the FEA results.</dd></div>
-    <div><dt>Role of ML</dt><dd>Speed only. Gaussian-process surrogates trained on 4,650 FEA designs make the sliders and the optimiser instant. Every number reported here was re-solved with the full FEA, and the app does the same with one click.</dd></div>
+    <div><dt>Role of ML</dt><dd>Speed only. Gaussian-process surrogates trained on 4,650 FEA designs make the sliders and the optimiser instant. The results below are full FEA solves, and the app switches to FEA with one click.</dd></div>
   </dl>
 
   <h2>Background</h2>
@@ -88,9 +88,9 @@
     <figcaption>PMSM Outrunner Explorer with the optimised 24-slot / 26-pole design loaded and solved with the full FEA ("FEA (exact)").</figcaption>
   </figure>
 
-  <h2>Why ML, and keeping it honest</h2>
+  <h2>Where the surrogates come in</h2>
   <p>
-    A full FEA evaluation takes 15–45 s, too slow for a slider or an optimiser. Surrogates fix the speed. But an optimiser running on a surrogate is drawn to exactly the corners where the surrogate is too optimistic. On its own optimum, the first surrogate overstated peak torque by 8 % (median, up to 16 %).
+    A full FEA evaluation takes 15–45 s, too slow for a slider or an optimiser. Surrogates fix the speed. An optimiser running on a surrogate tends to settle where the surrogate is most optimistic, and at its first optimum this one overstated peak torque by 8 % (median, up to 16 %).
   </p>
   <p>
     Two changes fixed that. Analytical magnetic-loading estimates (airgap, tooth and yoke flux densities, armature field) went in as inputs, so the model sees saturation coming. And optimiser candidates were verified with FEA and fed back in for two rounds. The error at the optimum fell to <strong>1.8 %</strong> (median, 5.9 % at the 90th percentile).
