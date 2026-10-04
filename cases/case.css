@@ -131,3 +131,9 @@
 .physics-box dt { font: 500 11.5px/1.9 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
 .physics-box dd { font-size: 15.5px; color: var(--ink-2); line-height: 1.6; }
 @media (max-width: 640px) { .physics-box div { grid-template-columns: 1fr; gap: 4px; } }
+.physics-box .phys-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+.physics-box .phys-list li { padding: 0 0 0 12px; border-left: 2px solid var(--line); line-height: 1.45; }
+.physics-box .phys-list li::before { content: none; }
+.physics-box .phys-list b { display: block; font-weight: 600; font-size: 14.5px; color: var(--ink); }
+.physics-box .phys-list span { display: block; font-size: 14px; color: var(--muted); }
+@media (max-width: 640px) { .physics-box .phys-list { grid-template-columns: 1fr; } }

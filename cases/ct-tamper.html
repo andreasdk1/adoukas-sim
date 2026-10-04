@@ -67,37 +67,37 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd>A closed-form magnetostatic chain: block-magnet near field, two-layer iron shielding, ferrite saturation, then metering error. Self-checked against physical limits and calibrated to two bench measurements.</dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Magnet</b><span>Block-magnet near field</span></li><li><b>Shielding</b><span>Two-layer iron shield</span></li><li><b>Core</b><span>Ferrite saturation</span></li><li><b>Metering</b><span>The resulting metering error</span></li><li><b>Validation</b><span>Checked against physical limits and calibrated to two bench measurements</span></li></ul></dd></div>
     <div><dt>Role of ML</dt><dd>The workflow is solver-agnostic: fed with Ansys Maxwell FEM data, where each design point costs seconds to minutes, the same DoE and surrogate make thousand-point studies instant. Here, trained on 512 physics evaluations, it also adds calibrated uncertainty and a sensitivity ranking.</dd></div>
   </dl>
 
   <h2>Background</h2>
   <p>
-    Revenue-metering current transformers are a known fraud target: holding a strong permanent magnet against a CT can locally saturate its iron shielding and ferrite core, making the meter under-read. IEC 61869 defines accuracy classes, but doesn't directly answer, for a specific shield/core design, how close a magnet needs to get before the reading drifts outside that class. This project applies the same DoE-plus-surrogate approach as my <a href="meander-antenna.html">meander antenna project</a> to a very different physics domain — magnetostatic tamper security instead of RF.
+    Revenue-metering current transformers are a known fraud target. A strong permanent magnet held against a CT can locally saturate its iron shielding and ferrite core, so the meter under-reads. IEC 61869 defines the accuracy classes, but it does not say, for a given shield and core design, how close a magnet can come before the reading leaves its class. This project answers that question with the same DoE-plus-surrogate approach as the <a href="meander-antenna.html">meander antenna project</a>, applied here to magnetostatics instead of RF.
   </p>
 
   <h2>Approach</h2>
   <p>
-    I derived a real, disclosed 4-stage closed-form model: a two-charge-sheet block-magnet field (accurate at near-field distances, unlike a simpler point-dipole approximation) feeding a thin-shell iron shielding calculation applied through both an inner and outer iron layer, then generalized Fröhlich saturation with a tunable sharpness exponent, then a ratio-error term proportional to the resulting ferrite permeability collapse. I self-validated the physics chain before trusting any downstream fit — far field must give exactly 0% error, error must strictly decrease with magnet distance, a thicker shield must reduce error at fixed distance — then ran a 512-point scrambled-Sobol design of experiments across 7 parameters (6 shield/core/winding thicknesses plus magnet standoff distance, log-sampled so DoE density concentrates near the real transition zone). FLAML AutoML picked the winning model family (LightGBM), wrapped in a 25-member bootstrap ensemble for calibrated uncertainty.
+    The physics is a four-stage closed-form model. A two-charge-sheet block-magnet field, which stays accurate in the near field where a point dipole does not, feeds a thin-shell shielding calculation through the inner and outer iron layers. Generalised Fröhlich saturation, with a tunable sharpness, then gives the drop in ferrite permeability, and the ratio error follows from it. The chain was checked against physical limits before any fitting: the far field gives exactly 0 % error, error falls steadily with magnet distance, and a thicker shield always reduces it. A 512-point scrambled-Sobol design of experiments then covered 7 parameters: six shield, core and winding thicknesses plus the magnet standoff, log-sampled so the points concentrate around the transition. FLAML AutoML selected LightGBM as the best model family, wrapped in a 25-member bootstrap ensemble for calibrated uncertainty.
   </p>
 
   <figure class="case-media">
     <img src="../assets/cases/ct-tamper/explorer-v2.png" alt="CT Tamper Immunity Surrogate GUI: shield/core thickness sliders, CT cross-section with approaching magnet, error-vs-distance curve, sensitivity ranking">
-    <figcaption>CT Tamper Immunity Surrogate — drag shield thicknesses or magnet standoff distance and see predicted tamper error against the declared accuracy class, live.</figcaption>
+    <figcaption>CT Tamper Immunity Surrogate: drag shield thicknesses or magnet standoff distance and see predicted tamper error against the declared accuracy class, live.</figcaption>
   </figure>
 
   <h2>Process</h2>
   <p>
-    The calibration constants weren't taken from a datasheet in isolation. Magnet strength and saturation sharpness were jointly retuned against two real bench measurements (tamper onset around 21mm, near-full-distortion around 13mm) — the magnet's literal N45–N52 datasheet magnetization figure (1.1M A/m) produced a transition far too wide and too far out when used directly, so the effective calibrated value (18,000 A/m) is disclosed in the code as a fitted effective constant reproducing the observed near-field falloff, explicitly not a literal magnet property. The ensemble's uncertainty was checked against real held-out coverage rather than assumed: raw 1-sigma coverage measured 98.5% (badly over-confident), needing an aggressive calibration factor (0.29) to hit the true 68.27% target.
+    Magnet strength and saturation sharpness were calibrated together against two bench measurements: tamper onset at about 21 mm and near-full distortion at about 13 mm. Using the datasheet magnetisation of an N45–N52 magnet (1.1 MA/m) directly gives a transition that is too wide and too far out, so the model uses a fitted effective value of 18,000 A/m that reproduces the measured near-field fall-off. The code labels it as an effective constant, not a magnet property. The ensemble's uncertainty was also checked against held-out data rather than assumed. Its raw 1-sigma coverage was 98.5 %, meaning the intervals were far too wide, and a calibration factor of 0.29 brings coverage to the correct 68.27 %.
   </p>
 
   <h2>Results</h2>
   <ul>
-    <li>Held-out relative RMSE of 2.37% (LightGBM, chosen by AutoML over competing model families).</li>
-    <li>A live desktop app lets you drag shield-layer thicknesses and magnet standoff distance and instantly see whether a design stays inside its declared IEC accuracy class under a tampering attempt — a study that would otherwise mean a Maxwell FEM solve per point.</li>
-    <li>For any shield stack, the app finds the minimum safe magnet distance directly on the error-versus-distance curve, so you can see how much each extra 0.1 mm of iron buys.</li>
-    <li>The sensitivity ranking makes the shielding trade-off actionable. Magnet standoff distance dominates (26%), followed by inner iron shield, outer iron shield and ferrite thickness at about 14–16% each. The winding and epoxy layers matter least.</li>
-    <li>Disclosed model limitation: the shielding formula uses the standard infinite-cylinder approximation. The real CT is short and capped, so end leakage through the iron caps isn't captured — exactly what a full Ansys Maxwell model would add next.</li>
+    <li>Held-out relative RMSE of 2.37 % (LightGBM, selected by AutoML from several model families).</li>
+    <li>A live desktop app: drag the shield-layer thicknesses and the magnet standoff and see immediately whether the design stays inside its IEC accuracy class during a tampering attempt. Done with FEM, each point would be a separate Maxwell solve.</li>
+    <li>For any shield stack, the app reads the minimum safe magnet distance off the error-versus-distance curve, showing what each extra 0.1 mm of iron buys.</li>
+    <li>A sensitivity ranking that points to the right design lever. Magnet standoff dominates (26 %), followed by the inner iron shield, outer iron shield and ferrite thickness at about 14–16 % each. The winding and epoxy layers matter least.</li>
+    <li>Stated limits: the shielding formula uses the standard infinite-cylinder approximation. The real CT is short and capped, so end leakage through the iron caps is not captured; that is the natural next step for a full Ansys Maxwell model.</li>
   </ul>
 
   <h2>Live demo</h2>
@@ -106,7 +106,7 @@
   </p>
   <figure class="case-media">
     <video src="../assets/cases/ct-tamper/demo.mp4" controls preload="metadata" poster="../assets/cases/ct-tamper/explorer-v2.png"></video>
-    <figcaption>CT Tamper Immunity Surrogate — live walkthrough</figcaption>
+    <figcaption>CT Tamper Immunity Surrogate, live walkthrough</figcaption>
   </figure>
 
 </main>

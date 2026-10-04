@@ -67,36 +67,36 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd>A semi-analytical magnetostatic model: Neumann flux-linkage summed over 100 discrete turns, verified exactly against the textbook mutual-inductance formula before any data was generated.</dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Model</b><span>Semi-analytical magnetostatics</span></li><li><b>Flux linkage</b><span>Neumann integral over 100 discrete turns</span></li><li><b>Validation</b><span>Matches the textbook mutual-inductance formula exactly, checked before any data was generated</span></li></ul></dd></div>
     <div><dt>Role of ML</dt><dd>Tolerance studies need thousands of Monte Carlo samples, and a Maxwell FEM solve per sample doesn't scale. The surrogate, trained on 512 physics evaluations, makes the study live and reports how confident each prediction is.</dd></div>
   </dl>
 
   <h2>Background</h2>
   <p>
-    A Rogowski coil's transfer function — its mutual inductance — depends on geometry that's never perfectly manufactured: mean coil radius, cross-section radius, winding uniformity, and how centered the primary conductor sits inside the coil. Tolerances on all of these shift the transfer function away from its nominal calibration, and IEC 61869-10 accuracy classes set how far that drift is allowed to go before units stop being interchangeable without individual recalibration. Exploring that 5-parameter tolerance space by hand, one field solve at a time, doesn't scale to a real Monte Carlo tolerance study — this project (built the same session as the <a href="ct-tamper.html">CT tamper-immunity project</a>, same architecture, different physics) was built to make that study interactive.
+    A Rogowski coil's transfer function, its mutual inductance, depends on geometry that is never manufactured perfectly: the mean coil radius, the cross-section radius, the winding uniformity and how well the primary conductor is centred. Tolerances on each of these shift the transfer function away from its nominal calibration, and the IEC 61869-10 accuracy classes set how far it may drift before units are no longer interchangeable without individual recalibration. A proper Monte Carlo study of this five-parameter tolerance space needs thousands of evaluations, far more than one field solve at a time allows. This project makes that study interactive, using the same architecture as the <a href="ct-tamper.html">CT tamper-immunity project</a> on different physics.
   </p>
 
   <h2>Approach</h2>
   <p>
-    I implemented a real closed-form Rogowski magnetostatic model — 100 discrete turns, uniform-field-over-small-loop approximation, summed around the coil — and validated it against the textbook closed-form mutual-inductance formula before trusting it further. I ran a 512-point scrambled-Sobol design of experiments (445 train / 67 held-out validation), sampling the conductor offset on a disk rather than a box so every sample stays physically inside the coil's aperture, and let FLAML AutoML pick the winning model family (LightGBM again), wrapped in a 25-member calibrated bootstrap ensemble.
+    The physics is a closed-form magnetostatic model of the coil: 100 discrete turns, each treated as a small loop in a uniform field, summed around the coil. It was validated against the textbook mutual-inductance formula before any data was generated. A 512-point scrambled-Sobol design of experiments followed (445 for training, 67 held out). The conductor offset is sampled on a disk rather than a square, so every sample is physically inside the coil aperture. FLAML AutoML again selected LightGBM, wrapped in a 25-member bootstrap ensemble with calibrated uncertainty.
   </p>
 
   <figure class="case-media">
     <img src="../assets/cases/rogowski-sensor/explorer-v2.png" alt="Rogowski Coil Tolerance Surrogate GUI: tolerance sliders, top-view and 3D coil geometry, predicted transfer function, IEC accuracy-class gauge, sensitivity ranking">
-    <figcaption>Rogowski Coil Tolerance Surrogate — drag any tolerance parameter, or the conductor position directly on the coil cross-section, and see the predicted transfer function and accuracy-class verdict live.</figcaption>
+    <figcaption>Rogowski Coil Tolerance Surrogate: drag any tolerance parameter, or the conductor position directly on the coil cross-section, and see the predicted transfer function and accuracy-class verdict live.</figcaption>
   </figure>
 
   <h2>Process</h2>
   <p>
-    The ensemble's uncertainty was checked against real held-out coverage rather than assumed correct: raw 1-sigma coverage measured 77.6%, corrected with a single calibration factor (0.79, chosen on validation data, not tuned against it) to hit the true 68.27% target. I also drew an explicit, disclosed framing distinction into the accuracy-class gauge itself: it checks geometric deviation from a shared nominal design, not whether a specific manufactured unit would fail inspection — real units are individually calibrated at production test, and conflating the two would make the tool say more than the physics supports.
+    The ensemble's uncertainty was checked against held-out data rather than assumed. Its raw 1-sigma coverage was 77.6 %, and a single calibration factor of 0.79, chosen on validation data, brings it to the correct 68.27 %. The accuracy-class gauge is also framed carefully: it measures geometric deviation from a shared nominal design, not whether a particular unit would fail inspection. Real units are individually calibrated at production test, and the tool is deliberately kept to what the physics supports.
   </p>
 
   <h2>Results</h2>
   <ul>
-    <li>Held-out relative RMSE of 1.92% (LightGBM).</li>
-    <li>A live desktop app: drag any of the 5 tolerance parameters, or click-drag the conductor position directly on the coil cross-section, and see the predicted transfer function, its calibrated uncertainty, and whether the design stays inside a chosen IEC accuracy class — instantly, versus a full field solve per point.</li>
-    <li>Tolerance-sensitivity ranking (cross-section radius and mean coil radius dominate) is directly actionable for deciding which manufacturing tolerance to tighten first.</li>
-    <li>This project and its CT tamper-immunity sibling became the basis for a CADFEM World Conference 2026 talk — the same explorer screenshots and sensitivity charts were adapted directly into the presentation deck.</li>
+    <li>Held-out relative RMSE of 1.92 % (LightGBM).</li>
+    <li>A live desktop app: drag any of the five tolerance parameters, or drag the conductor directly on the coil cross-section, and see the predicted transfer function, its calibrated uncertainty and whether the design stays inside the chosen IEC accuracy class, instantly rather than one field solve per point.</li>
+    <li>A tolerance-sensitivity ranking, led by the cross-section radius and the mean coil radius, that shows which manufacturing tolerance to tighten first.</li>
+    <li>This project and the CT tamper-immunity study formed the basis of a talk at the CADFEM World Conference 2026, with the explorer screenshots and sensitivity charts used directly in the presentation.</li>
   </ul>
 
   <h2>Live demo</h2>
@@ -105,7 +105,7 @@
   </p>
   <figure class="case-media">
     <video src="../assets/cases/rogowski-sensor/demo.mp4" controls preload="metadata" poster="../assets/cases/rogowski-sensor/explorer-v2.png"></video>
-    <figcaption>Rogowski Coil Tolerance Surrogate — live walkthrough</figcaption>
+    <figcaption>Rogowski Coil Tolerance Surrogate, live walkthrough</figcaption>
   </figure>
 
 </main>

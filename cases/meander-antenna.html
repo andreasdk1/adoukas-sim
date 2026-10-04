@@ -66,8 +66,8 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd>Full-wave electromagnetics: every training point is a real openEMS FDTD solve of Maxwell's equations on a mesh checked for convergence. 288 geometry solves, plus 30 more for substrate temperature and Dk.</dd></div>
-    <div><dt>Role of ML</dt><dd>Speed only. A solve takes ~90 s; the surrogate answers in 2.6 ms, so you can drag through the design space instead of queueing solves. The ML surrogate is trained on openEMS solves and checked against held-out ones.</dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Electromagnetics</b><span>Full-wave openEMS FDTD solves of Maxwell's equations</span></li><li><b>Mesh</b><span>Checked for convergence</span></li><li><b>Data</b><span>288 geometry solves, plus 30 for substrate temperature and Dk</span></li></ul></dd></div>
+    <div><dt>Role of ML</dt><dd>An ML surrogate trained on openEMS solves, and validated against held-out ones, answers in 2.6 ms compared with about 90 s for a full-wave solve. The design space can then be explored continuously rather than one queued solve at a time.</dd></div>
   </dl>
 
   <h2>Background</h2>
@@ -110,7 +110,7 @@
   <ul>
     <li>A packaged, signed desktop app (V07) replaces a ~90-second FDTD solve with an instant prediction. The full update loop takes 2.6 ms on average (2.9 ms at p95), measured over 300 randomised parameter changes.</li>
     <li>Geometry can be dragged directly on the 3D model or set numerically, and the current design and predicted curves export to CSV.</li>
-    <li>The app is upfront about its accuracy gap. On held-out N = 3 data it shows 4.6% mean / 14.6% p95 error on resonant frequency, 5.1 dB on |S11| and 7.1 points on efficiency, short of the 2% / 2 dB / 3-point targets. The DoE reached 72 points per N against a 256-point plan, so the fix is more training data, not model tuning, and the app says so.</li>
+    <li>The app reports its accuracy openly. On held-out N = 3 data it shows 4.6% mean / 14.6% p95 error on resonant frequency, 5.1 dB on |S11| and 7.1 points on efficiency, short of the 2% / 2 dB / 3-point targets. The DoE reached 72 points per N against a 256-point plan, so the fix is more training data, not model tuning, and the app says so.</li>
   </ul>
 
   <h2>Live demo</h2>

@@ -66,8 +66,8 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd>A full physics engine from switching edge to test receiver: SVPWM source spectra, nodal circuit solution with LISNs, harness, filter and parasitics extracted from the PCB copper, and a CISPR 25 receiver model.</dd></div>
-    <div><dt>Role of ML</dt><dd>None. The explorer runs the physics engine directly; exact numerical shortcuts make a full spectrum take about 0.1 s.</dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Sources</b><span>SVPWM switching-edge spectra</span></li><li><b>Circuit</b><span>Nodal solution with LISNs, harness and filter</span></li><li><b>Parasitics</b><span>Extracted from the PCB copper</span></li><li><b>Receiver</b><span>CISPR 25 test-receiver model</span></li></ul></dd></div>
+    <div><dt>Role of ML</dt><dd>The explorer runs the physics engine directly. Exact numerical shortcuts bring a full spectrum down to about 0.1 s, fast enough for interactive use, so every result shown is a complete solve.</dd></div>
   </dl>
 
   <h2>Background</h2>
@@ -77,7 +77,7 @@
 
   <h2>Approach</h2>
   <p>
-    This is a physics model, not a trained surrogate, built from the noise source through to the test receiver:
+    The model is built from physics, from the noise source through to the test receiver:
   </p>
   <ul>
     <li><strong>Noise source:</strong> centre-aligned SVPWM at 12 kHz. Each switch-node edge is hard or soft depending on current sign and dead time, giving exact line spectra up to 110 MHz.</li>
@@ -128,7 +128,7 @@
 
   <h2>Thermal cross-check</h2>
   <p>
-    The same app carries a four-layer finite-volume thermal model of the board, built from the KiCad copper and vias. That caught a real trap. The optimiser's cheapest route to Class 2 was to raise the snubber capacitors from 330 pF to 3.3 nF, but the thermal model puts the snubber resistors at about 95 °C, twice their power rating. An EMI fix that looks free on the spectrum is rejected on temperature.
+    The same app carries a four-layer finite-volume thermal model of the board, built from the KiCad copper and vias. This brought out an important trade-off. The optimiser's cheapest route to Class 2 was to raise the snubber capacitors from 330 pF to 3.3 nF, but the thermal model puts the snubber resistors at about 95 °C, twice their power rating. An EMI fix that looks free on the spectrum is rejected on temperature.
   </p>
 
   <figure class="case-media">

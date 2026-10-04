@@ -66,8 +66,8 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd>Nonlinear 2D finite-element magnetics with a moving band, cross-checked against the independent GetDP solver to 0.001 % on torque. Drive (6-step, SPWM, SVPWM), iron and eddy losses, a thermal network, airgap-force NVH and a demagnetisation check all run on the FEA results.</dd></div>
-    <div><dt>Role of ML</dt><dd>Speed only. Gaussian-process surrogates trained on 4,650 FEA designs make the sliders and the optimiser instant. The results below are full FEA solves; in the app, the ML preview and the full FEA are one click apart.</dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Magnetics</b><span>Nonlinear 2D finite elements with a moving band</span></li><li><b>Cross-check</b><span>Independent GetDP solver agrees to 0.001 % on torque</span></li><li><b>Drive</b><span>6-step, SPWM and SVPWM</span></li><li><b>Losses</b><span>Iron and eddy-current losses</span></li><li><b>Thermal</b><span>Thermal network</span></li><li><b>NVH &amp; demag</b><span>Airgap-force vibration and a demagnetisation check</span></li></ul></dd></div>
+    <div><dt>Role of ML</dt><dd>Gaussian-process surrogates, trained on 4,650 FEA designs, give instant feedback as you move the sliders and run the optimiser. Any design can then be confirmed with a full FEA solve in one click; the results below are all full FEA solves.</dd></div>
   </dl>
 
   <h2>Background</h2>
