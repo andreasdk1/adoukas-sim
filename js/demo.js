@@ -6,9 +6,12 @@
 // Heat: the board is a conducting sheet (copper + FR4) with each part's power as
 // a source. It loses heat to the air above through a local convection
 // coefficient that depends on the local air speed (laminar flat-plate
-// correlation), and to the enclosure below. The air temperature is transported
-// by the flow and heated by the board. Junction temperature = board under the
-// part + P·R_jb.
+// correlation), by radiation to the enclosure lid, and to the enclosure below.
+// Low-profile packages cover the board under them; each splits its power between
+// the board (junction-to-board resistance) and its own top surface (junction-to-
+// case-top resistance), which convects to the air and radiates to the lid. The
+// air temperature is transported by the flow and heated by the board and the
+// package tops; radiation goes to the enclosure, not into the air.
 (function () {
   'use strict';
 
@@ -30,20 +33,26 @@
     '1oz4': 4 * 400 * 35e-6 + 0.3 * 1.6e-3,
   };
   // Local convection coefficient: laminar flat plate, Nu = 0.664 Re^½ Pr^⅓ over a
-  // 50 mm developing length, plus a 6 W/m²K floor for natural convection/radiation.
-  const hConv = u => 6 + 17 * Math.sqrt(Math.max(u, 0));
+  // 50 mm developing length, plus a 3 W/m²K floor for natural convection.
+  const hConv = u => 3 + 17 * Math.sqrt(Math.max(u, 0));
+  // Radiation to the enclosure lid at T_AMB (solder mask and package tops,
+  // ε = 0.9), linearised exactly: h = εσ(T² + T∞²)(T + T∞), in kelvin.
+  const EPS_SIGMA = 0.9 * 5.67e-8, TK_AMB = T_AMB + 273.15;
+  const hRad = t => { const tk = t + 273.15; return EPS_SIGMA * (tk * tk + TK_AMB * TK_AMB) * (tk + TK_AMB); };
 
   // Tmax is a conservative design limit, not the datasheet absolute maximum:
   // MOSFETs rated 150–175 °C are held to 110 °C, 105 °C electrolytics to 85 °C for
   // lifetime, the MCU to 85 °C, the inductor to 100 °C, the regulator to 105 °C.
+  // Rjt is the junction-to-case-top resistance of the low-profile packages
+  // (typical datasheet R_θJC(top)); tall parts shed heat through their body.
   const PARTS0 = [
     { id: 'L1', kind: 'Inductor',     x: 38,  y: 50, w: 14, h: 14, tall: true,  shape: 'rect',   P: 1.5, Rjb: 4,   Tmax: 100 },
     { id: 'C1', kind: 'Electrolytic', x: 36,  y: 22, w: 10, h: 10, tall: true,  shape: 'circle', P: 0.2, Rjb: 10,  Tmax: 85 },
     { id: 'C2', kind: 'Electrolytic', x: 36,  y: 78, w: 10, h: 10, tall: true,  shape: 'circle', P: 0.2, Rjb: 10,  Tmax: 85 },
-    { id: 'Q1', kind: 'MOSFET',       x: 66,  y: 50, w: 10, h: 12, tall: false, shape: 'rect',   P: 4.0, Rjb: 1.5, Tmax: 110 },
-    { id: 'Q2', kind: 'MOSFET',       x: 92,  y: 30, w: 10, h: 12, tall: false, shape: 'rect',   P: 4.0, Rjb: 1.5, Tmax: 110 },
-    { id: 'U1', kind: 'Regulator',    x: 96,  y: 74, w: 6,  h: 6,  tall: false, shape: 'rect',   P: 1.2, Rjb: 12,  Tmax: 105 },
-    { id: 'U2', kind: 'MCU',          x: 128, y: 52, w: 12, h: 12, tall: false, shape: 'rect',   P: 0.5, Rjb: 15,  Tmax: 85 },
+    { id: 'Q1', kind: 'MOSFET',       x: 66,  y: 50, w: 10, h: 12, tall: false, shape: 'rect',   P: 4.0, Rjb: 1.5, Rjt: 20, Tmax: 110 },
+    { id: 'Q2', kind: 'MOSFET',       x: 92,  y: 30, w: 10, h: 12, tall: false, shape: 'rect',   P: 4.0, Rjb: 1.5, Rjt: 20, Tmax: 110 },
+    { id: 'U1', kind: 'Regulator',    x: 96,  y: 74, w: 6,  h: 6,  tall: false, shape: 'rect',   P: 1.2, Rjb: 12,  Rjt: 30, Tmax: 105 },
+    { id: 'U2', kind: 'MCU',          x: 128, y: 52, w: 12, h: 12, tall: false, shape: 'rect',   P: 0.5, Rjb: 15,  Rjt: 15, Tmax: 85 },
   ];
   let parts = PARTS0.map(p => ({ ...p }));
 
@@ -55,7 +64,9 @@
   const Tb = new Float32Array(N).fill(T_AMB);
   const q = new Float32Array(N);              // W/m² heat source into the board
   const owner = new Int16Array(N).fill(-1);   // part index per cell
-  const hcell = new Float32Array(N);
+  const hcell = new Float32Array(N);          // W/m²K, board (or tall body) to air
+  const hrad = new Float32Array(N);           // W/m²K, board to enclosure lid
+  const qair = new Float32Array(N);           // W/m², package tops into the air
 
   const ui = {
     fan: 2.0, copper: '1oz2', view: 'board', selected: 3,
@@ -123,7 +134,9 @@
           if (inside(p, xmm, ymm)) cells.push(i * n + j);
         }
       p.cells = cells;
-      const qa = cells.length ? p.P / (cells.length * DX * DX) : 0;
+      if (p.Pb === undefined || !p.Rjt) p.Pb = p.P;
+      p.Pb = Math.min(p.Pb, p.P);
+      const qa = cells.length ? p.Pb / (cells.length * DX * DX) : 0;
       for (const c of cells) {
         owner[c] = k; q[c] += qa;
         if (p.tall) { s[c] = 0; u[c] = 0; v[c] = 0; }
@@ -222,7 +235,33 @@
     const hBody = 2.5 * hConv(0.6 * ui.fan);  // tall body: extra wetted area, partly sheltered
     for (let i = 1; i < nx; i++) for (let j = 1; j < ny - 1; j++) {
       const c = i * n + j;
-      hcell[c] = s[c] === 0 ? hBody : hConv(localSpeed(c));
+      const covered = owner[c] >= 0 && !parts[owner[c]].tall;   // under a low-profile package
+      hcell[c] = covered ? 0 : s[c] === 0 ? hBody : hConv(localSpeed(c));
+      hrad[c] = covered ? 0 : hRad(Tb[c]);
+      qair[c] = 0;
+    }
+    topSide();
+  }
+  // Package top of each low-profile part: junction -> case top (Rjt) -> air
+  // (convection) and lid (radiation). With the board path Tj = Tb + Pb·Rjb, the
+  // two paths in parallel give the board share Pb in closed form; it is lagged
+  // by one step, which is stable because the top path is the weaker one.
+  function topSide() {
+    for (const p of parts) {
+      if (p.tall || !p.Rjt || !p.cells.length) continue;
+      const A = p.cells.length * DX * DX;
+      let tb = 0, ta = 0, hc = 0;
+      for (const c of p.cells) { tb += Tb[c]; ta += Ta[c]; hc += hConv(localSpeed(c)); }
+      tb /= p.cells.length; ta /= p.cells.length; hc /= p.cells.length;
+      const tc0 = p.Tc === undefined ? tb : p.Tc;
+      const Gc = hc * A, Gr = hRad(tc0) * A;
+      const Teff = (Gc * ta + Gr * T_AMB) / (Gc + Gr), Rt = p.Rjt + 1 / (Gc + Gr);
+      const Pt = Math.min(p.P, Math.max(0, (p.P * p.Rjb + tb - Teff) / (p.Rjb + Rt)));
+      p.Pb = p.P - Pt;
+      p.Tc = Teff + Pt / (Gc + Gr);                  // case-top temperature
+      p.Pair = Gc * (p.Tc - ta);                     // share of Pt that heats the air
+      const qa = p.Pb / A, qt = Math.max(0, p.Pair) / A;
+      for (const c of p.cells) { q[c] = qa; qair[c] = qt; }
     }
   }
   // Local time stepping: in slow air (wakes, corners, along walls) each step
@@ -239,7 +278,7 @@
       const f = Math.min(LTS, Math.max(1, 0.5 * Ug / (Math.hypot(uc, vc) + 1e-9)));
       const t = sample(i + 0.5 - f * uc, j + 0.5 - f * vc, Ta, 0.5, 0.5);
       const a = f * dtp * hcell[c] / RHO_CP_GAP;
-      nTa[c] = (t + a * Tb[c]) / (1 + a);
+      nTa[c] = (t + a * Tb[c] + f * dtp * qair[c] / RHO_CP_GAP) / (1 + a);
     }
     Ta.set(nTa);
   }
@@ -255,8 +294,8 @@
           if (i < nx - 1) { sum += Tb[c + n]; cnt++; }
           if (j > 1) { sum += Tb[c - 1]; cnt++; }
           if (j < ny - 2) { sum += Tb[c + 1]; cnt++; }
-          const ht = hcell[c];
-          const tn = (Gd * sum + q[c] + ht * Ta[c] + H_BOTTOM * T_AMB) / (Gd * cnt + ht + H_BOTTOM);
+          const ht = hcell[c], hr = hrad[c];
+          const tn = (Gd * sum + q[c] + ht * Ta[c] + (hr + H_BOTTOM) * T_AMB) / (Gd * cnt + ht + hr + H_BOTTOM);
           const d = omega * (tn - Tb[c]);
           Tb[c] += d;
           if (sw === sweeps - 1 && Math.abs(d) > maxd) maxd = Math.abs(d);
@@ -290,7 +329,7 @@
     for (const p of parts) {
       let t = 0; for (const c of p.cells) t += Tb[c];
       p.Tb = p.cells.length ? t / p.cells.length : T_AMB;
-      p.Tj = p.Tb + p.P * p.Rjb;
+      p.Tj = p.Tb + p.Pb * p.Rjb;
       // smoothed for display over ~40 steps, so wake shedding doesn't make the
       // readout (or an over-limit flag right at the limit) flicker
       p.TjS = p.TjS === undefined ? p.Tj : p.TjS + 0.025 * (p.Tj - p.TjS);
