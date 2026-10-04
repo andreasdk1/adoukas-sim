@@ -67,7 +67,7 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Model</b><span>Semi-analytical magnetostatics</span></li><li><b>Flux linkage</b><span>Neumann integral over 100 discrete turns</span></li><li><b>Validation</b><span>Matches the textbook mutual-inductance formula exactly, checked before any data was generated</span></li></ul></dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Model</b><span>Closed-form magnetostatics of the coil and the primary conductor</span></li><li><b>Flux linkage</b><span>Summed over 100 discrete turns, each a small loop in a uniform field</span></li><li><b>Tolerances</b><span>Mean and cross-section radius, winding uniformity and conductor offset</span></li><li><b>Validation</b><span>Matches the textbook mutual-inductance formula exactly, checked before any data was generated</span></li></ul></dd></div>
     <div><dt>Role of ML</dt><dd>Tolerance studies need thousands of Monte Carlo samples, and a Maxwell FEM solve per sample doesn't scale. The surrogate, trained on 512 physics evaluations, makes the study live and reports how confident each prediction is.</dd></div>
   </dl>
 

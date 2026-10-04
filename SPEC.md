@@ -158,7 +158,7 @@ style.css
 - Measured, professional and informative: full sentences that say what was done and why it is useful.
 - No blunt one-word openers or verdicts ("None.", "Speed only.", "No ML needed."), no slang ("a real trap") and no jokey asides.
 - "Role of ML" box: lead with what ML contributes. Where a study uses no ML, describe the direct physics approach and explain why it suits the study, without framing ML as a mistake.
-- "Physics" box: a scannable list of short items (bold label plus a one-line detail, `ul.phys-list`), not a run-on paragraph.
+- "Physics" box: a scannable list of short items (bold label plus a one-line detail, `ul.phys-list`), not a run-on paragraph. Each detail names the actual method and what it captures (e.g. "Coupled thermal network that feeds magnet temperature back into the remanence"), never a restatement of the label ("Thermal network").
 - State limits plainly under "Stated limits", in the same calm tone.
 
 ---

@@ -66,7 +66,7 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Sources</b><span>SVPWM switching-edge spectra</span></li><li><b>Circuit</b><span>Nodal solution with LISNs, harness and filter</span></li><li><b>Parasitics</b><span>Extracted from the PCB copper</span></li><li><b>Receiver</b><span>CISPR 25 test-receiver model</span></li></ul></dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Sources</b><span>Centre-aligned SVPWM switch-node edges, giving exact line spectra up to 110 MHz</span></li><li><b>Circuit</b><span>Nodal solution at every frequency: LISNs, harness over the ground plane, filter, DC link and motor</span></li><li><b>Parasitics</b><span>Stray capacitance and loop coupling extracted from the KiCad copper</span></li><li><b>Receiver</b><span>CISPR 25 test receiver with 9 / 120 kHz RBW and average and peak detectors</span></li><li><b>Thermal</b><span>Four-layer finite-volume board model built from the copper and vias</span></li></ul></dd></div>
     <div><dt>Role of ML</dt><dd>The explorer runs the physics engine directly. Exact numerical shortcuts bring a full spectrum down to about 0.1 s, fast enough for interactive use, so every result shown is a complete solve.</dd></div>
   </dl>
 

@@ -67,7 +67,7 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Magnet</b><span>Block-magnet near field</span></li><li><b>Shielding</b><span>Two-layer iron shield</span></li><li><b>Core</b><span>Ferrite saturation</span></li><li><b>Metering</b><span>The resulting metering error</span></li><li><b>Validation</b><span>Checked against physical limits and calibrated to two bench measurements</span></li></ul></dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Magnet</b><span>Two-charge-sheet block-magnet field, accurate in the near field</span></li><li><b>Shielding</b><span>Thin-shell attenuation through the inner and outer iron layers</span></li><li><b>Core</b><span>Generalised Fröhlich saturation of the ferrite</span></li><li><b>Metering</b><span>Ratio error from the resulting drop in ferrite permeability</span></li><li><b>Validation</b><span>Checked against physical limits and calibrated to two bench measurements</span></li></ul></dd></div>
     <div><dt>Role of ML</dt><dd>The workflow is solver-agnostic: fed with Ansys Maxwell FEM data, where each design point costs seconds to minutes, the same DoE and surrogate make thousand-point studies instant. Here, trained on 512 physics evaluations, it also adds calibrated uncertainty and a sensitivity ranking.</dd></div>
   </dl>
 

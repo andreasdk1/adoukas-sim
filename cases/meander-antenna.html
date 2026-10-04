@@ -66,7 +66,7 @@
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Electromagnetics</b><span>Full-wave openEMS FDTD solves of Maxwell's equations</span></li><li><b>Mesh</b><span>Checked for convergence</span></li><li><b>Data</b><span>288 geometry solves, plus 30 for substrate temperature and Dk</span></li></ul></dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Electromagnetics</b><span>Full-wave openEMS FDTD solves of Maxwell's equations</span></li><li><b>Mesh</b><span>Convergence checked from 0.4 to 7.4 million cells: under 1.3 % shift in resonance</span></li><li><b>Data</b><span>288 geometry solves, plus 30 for substrate temperature and Dk</span></li></ul></dd></div>
     <div><dt>Role of ML</dt><dd>An ML surrogate trained on openEMS solves, and validated against held-out ones, answers in 2.6 ms compared with about 90 s for a full-wave solve. The design space can then be explored continuously rather than one queued solve at a time.</dd></div>
   </dl>
 
