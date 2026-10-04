@@ -94,14 +94,16 @@
 
     <div class="demo-notes">
       <dl class="physics-box dark">
-        <div><dt>Flow</dt><dd>2D incompressible flow over the board on a staggered grid, with pressure projection and friction from the channel walls. Tall parts (inductor, capacitors) are solid obstacles, so wakes and vortex shedding form behind them.</dd></div>
-        <div><dt>Heat</dt><dd>The board is a conducting sheet (copper plus FR4) with each part's power as a heat source. It loses heat to the air through a local convection coefficient that follows the local air speed (laminar flat-plate correlation), by radiation to the enclosure, and through its underside; the air carries its share downstream. Each low-profile package also sheds part of its power through its own top surface, by convection to the air and radiation to the enclosure. At the default settings about two thirds of the heat ends up in the air, a fifth leaves through the underside and the rest is radiated.</dd></div>
-        <div><dt>Junctions</dt><dd>Junction temperature = board temperature under the part + the power flowing into the board × junction-to-board thermal resistance. The split between the board and the package top follows from the junction-to-board and junction-to-case-top resistances, both typical datasheet values. Limits are conservative design limits, not absolute maximums: 110 °C for MOSFETs rated 150–175 °C, 85 °C for 105 °C-rated electrolytics (their life halves with every 10 °C), 85 °C for the MCU, 100 °C for the inductor.</dd></div>
-        <div><dt>Limits</dt><dd>A 2D, depth-averaged model on a 0.8 mm grid: right for trends and layout intuition, not for sign-off. A real design gets a full 3D conjugate heat-transfer model in Icepak or OpenFOAM.</dd></div>
+        <div><dt>Flow</dt><dd><ul class="phys-list"><li><b>Airflow</b><span>2D incompressible flow on a staggered grid, with pressure projection</span></li><li><b>Channel</b><span>Friction from the enclosure walls above and below the board</span></li><li><b>Tall parts</b><span>The inductor and capacitors are solid obstacles, so wakes and vortex shedding form behind them</span></li></ul></dd></div>
+        <div><dt>Heat</dt><dd><ul class="phys-list"><li><b>Board</b><span>Copper and FR4 conducting sheet, with each part's power as a heat source</span></li><li><b>Convection</b><span>Follows the local air speed (laminar flat-plate correlation); the air carries the heat downstream</span></li><li><b>Radiation</b><span>From the board and the package tops to the enclosure, growing with temperature</span></li><li><b>Package tops</b><span>Low-profile parts also shed some power through their own top surface</span></li><li><b>Heat balance</b><span>At the default settings about two thirds goes into the air, a fifth through the underside and the rest is radiated</span></li></ul></dd></div>
+        <div><dt>Junctions</dt><dd><ul class="phys-list"><li><b>Temperature</b><span>Board temperature under the part plus the board-side power × junction-to-board resistance, from typical datasheet values</span></li><li><b>Design limits</b><span>Set below the rated maximums: MOSFETs 110 °C (rated 150–175 °C), electrolytics 85 °C (rated 105 °C; life halves every 10 °C), MCU 85 °C, inductor 100 °C, regulator 105 °C</span></li></ul></dd></div>
+        <div><dt>Limits</dt><dd><ul class="phys-list"><li><b>Scope</b><span>A 2D, depth-averaged model on a 0.8 mm grid: right for trends and layout intuition, not for sign-off</span></li><li><b>Full design</b><span>A real board gets a full 3D conjugate heat-transfer model in Icepak or OpenFOAM</span></li></ul></dd></div>
       </dl>
       <div class="demo-cta">
-        <h2>Want this for your own board?</h2>
-        <p>The same physics, in full 3D and with your geometry, materials and airflow.</p>
+        <div>
+          <h2>Want this for your own board?</h2>
+          <p>The same physics, in full 3D and with your geometry, materials and airflow.</p>
+        </div>
         <a class="btn btn-primary" href="index.html#contact">Start a conversation</a>
       </div>
     </div>
