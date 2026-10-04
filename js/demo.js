@@ -49,8 +49,8 @@
     { id: 'L1', kind: 'Inductor',     x: 38,  y: 50, w: 14, h: 14, tall: true,  shape: 'rect',   P: 1.5, Rjb: 4,   Tmax: 100 },
     { id: 'C1', kind: 'Electrolytic', x: 36,  y: 22, w: 10, h: 10, tall: true,  shape: 'circle', P: 0.2, Rjb: 10,  Tmax: 85 },
     { id: 'C2', kind: 'Electrolytic', x: 36,  y: 78, w: 10, h: 10, tall: true,  shape: 'circle', P: 0.2, Rjb: 10,  Tmax: 85 },
-    { id: 'Q1', kind: 'MOSFET',       x: 66,  y: 50, w: 10, h: 12, tall: false, shape: 'rect',   P: 4.0, Rjb: 1.5, Rjt: 20, Tmax: 110 },
-    { id: 'Q2', kind: 'MOSFET',       x: 92,  y: 30, w: 10, h: 12, tall: false, shape: 'rect',   P: 4.0, Rjb: 1.5, Rjt: 20, Tmax: 110 },
+    { id: 'Q1', kind: 'MOSFET',       x: 66,  y: 50, w: 10, h: 12, tall: false, shape: 'rect',   P: 5.0, Rjb: 1.5, Rjt: 20, Tmax: 110 },
+    { id: 'Q2', kind: 'MOSFET',       x: 92,  y: 30, w: 10, h: 12, tall: false, shape: 'rect',   P: 5.0, Rjb: 1.5, Rjt: 20, Tmax: 110 },
     { id: 'U1', kind: 'Regulator',    x: 96,  y: 74, w: 6,  h: 6,  tall: false, shape: 'rect',   P: 1.2, Rjb: 12,  Rjt: 30, Tmax: 105 },
     { id: 'U2', kind: 'MCU',          x: 128, y: 52, w: 12, h: 12, tall: false, shape: 'rect',   P: 0.5, Rjb: 15,  Rjt: 15, Tmax: 85 },
   ];
