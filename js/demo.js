@@ -110,7 +110,7 @@
     return Math.abs(xmm - p.x) <= p.w / 2 && Math.abs(ymm - p.y) <= p.h / 2;
   }
   function rebuild() {
-    hist.length = 0;
+    resetSettle();
     s.fill(1); q.fill(0); owner.fill(-1);
     for (let i = 0; i < nx; i++) { s[i * n] = 0; s[i * n + ny - 1] = 0; }
     for (let j = 0; j < ny; j++) s[j] = 0;   // inlet column
@@ -225,15 +225,21 @@
       hcell[c] = s[c] === 0 ? hBody : hConv(localSpeed(c));
     }
   }
+  // Local time stepping: in slow air (wakes, corners, along walls) each step
+  // covers up to LTS times more time, so dead zones warm up as fast as the open
+  // channel. The backtrace and the heat source are scaled together, which leaves
+  // the steady state unchanged; the heat source is implicit, so it cannot overshoot.
+  const LTS = 20;
   function advectAir() {
     nTa.set(Ta);
     for (let i = 2; i < nx; i++) for (let j = 1; j < ny - 1; j++) {
       const c = i * n + j;
       if (s[c] === 0) { nTa[c] = 0.25 * (Ta[c - n] + Ta[(i < nx - 1 ? c + n : c)] + Ta[c - 1] + Ta[c + 1]); continue; }
       const uc = i < nx - 1 ? 0.5 * (u[c] + u[c + n]) : u[c], vc = 0.5 * (v[c] + v[c + 1]);
-      let t = sample(i + 0.5 - uc, j + 0.5 - vc, Ta, 0.5, 0.5);
-      t += dtp * hcell[c] * (Tb[c] - t) / RHO_CP_GAP;
-      nTa[c] = t;
+      const f = Math.min(LTS, Math.max(1, 0.5 * Ug / (Math.hypot(uc, vc) + 1e-9)));
+      const t = sample(i + 0.5 - f * uc, j + 0.5 - f * vc, Ta, 0.5, 0.5);
+      const a = f * dtp * hcell[c] / RHO_CP_GAP;
+      nTa[c] = (t + a * Tb[c]) / (1 + a);
     }
     Ta.set(nTa);
   }
@@ -261,23 +267,33 @@
   }
   const hist = [];
   // Settled = the trend has stopped, judged on the mean of the hottest junction
-  // over the last second vs the second before. Wake shedding makes the
-  // instantaneous value wobble, so a max−min test would never pass.
-  const WIN = 60;
+  // over the last WIN solver steps vs the WIN before. Wake shedding makes the
+  // instantaneous value oscillate by up to ~1 °C, so the windows are longer than
+  // a shedding period and the threshold sits above what an oscillation leaves in
+  // the window means. Once settled, the verdict holds until the next change, and
+  // MAX_STEPS and MAX_MS cap the wait (the second for slow devices), so the
+  // status can never stay on "Solving…".
+  const WIN = 120, MAX_STEPS = 1500, MAX_MS = 20000;
+  let steps = 0, latched = false, changedAt = 0;
+  function resetSettle() { hist.length = 0; steps = 0; latched = false; isSettled = false; changedAt = performance.now(); panelTick = 5; }
   function settled() {
+    if (latched) return true;
     const m = parts.reduce((a, p) => Math.max(a, p.Tj), 0);
     hist.push(m); if (hist.length > 2 * WIN) hist.shift();
+    if (++steps >= MAX_STEPS || performance.now() - changedAt > MAX_MS) return (latched = true);
     if (hist.length < 2 * WIN) return false;
     let a = 0, b = 0;
     for (let k = 0; k < WIN; k++) { a += hist[k]; b += hist[k + WIN]; }
-    return Math.abs(a - b) / WIN < 0.3;
+    return (latched = Math.abs(a - b) / WIN < 0.4);
   }
   function junctions() {
     for (const p of parts) {
       let t = 0; for (const c of p.cells) t += Tb[c];
       p.Tb = p.cells.length ? t / p.cells.length : T_AMB;
       p.Tj = p.Tb + p.P * p.Rjb;
-      p.TjS = p.TjS === undefined ? p.Tj : p.TjS + 0.08 * (p.Tj - p.TjS);   // smoothed for display
+      // smoothed for display over ~40 steps, so wake shedding doesn't make the
+      // readout (or an over-limit flag right at the limit) flicker
+      p.TjS = p.TjS === undefined ? p.Tj : p.TjS + 0.025 * (p.Tj - p.TjS);
     }
   }
 
@@ -392,7 +408,7 @@
     const busy = !isSettled;
     const st = el('demo-status');
     st.className = 'demo-status ' + (busy ? 'busy' : hot.TjS > hot.Tmax ? 'bad' : 'ok');
-    st.textContent = busy ? 'Solving…'
+    st.textContent = busy ? `Solving… hottest ${hot.id} ${Math.round(hot.TjS)} °C`
       : hot.TjS > hot.Tmax ? `${hot.id} over its design limit by ${Math.round(hot.TjS - hot.Tmax)} °C`
       : `All parts within limits · tightest: ${hot.id}, ${Math.round(hot.Tmax - hot.TjS)} °C margin`;
     el('demo-total').textContent = total.toFixed(1) + ' W total';
@@ -401,7 +417,12 @@
 
   // ----------------------------------------------------------------- loop
   let running = false, raf = 0;
-  function frame() {
+  // One solver step: flow, air and board advance together. While the status
+  // reads "Solving…" (and no part is being dragged), extra steps run within a
+  // ~30 fps frame budget, so a changed layout settles in a few seconds even at
+  // low fan speed, where the flow takes longest to re-form around the parts.
+  const BUDGET_MS = 34, MAX_PER_FRAME = 4;
+  function solverStep() {
     setInlet();
     for (let k = 0; k < 2; k++) {
       friction();
@@ -416,6 +437,15 @@
     residual = solveBoard(12);
     junctions();
     isSettled = settled();
+  }
+  function frame() {
+    const t0 = performance.now();
+    solverStep();
+    for (let k = 1; k < MAX_PER_FRAME && !isSettled && !drag; k++) {
+      const used = performance.now() - t0;
+      if (used / k * (k + 1) > BUDGET_MS) break;
+      solverStep();
+    }
     drawField();
     moveParticles(2);
     drawParts();
@@ -475,8 +505,8 @@
     const t = e.touches[0]; if (t && pick(...toMM(t)) >= 0) e.preventDefault();
   }, { passive: false });
 
-  el('fan').addEventListener('input', e => { ui.fan = +e.target.value; hist.length = 0; el('fan-v').textContent = ui.fan.toFixed(1) + ' m/s'; });
-  el('copper').addEventListener('change', e => { ui.copper = e.target.value; hist.length = 0; });
+  el('fan').addEventListener('input', e => { ui.fan = +e.target.value; el('fan-v').textContent = ui.fan.toFixed(1) + ' m/s'; resetSettle(); });
+  el('copper').addEventListener('change', e => { ui.copper = e.target.value; resetSettle(); });
   document.querySelectorAll('input[name="view"]').forEach(r => r.addEventListener('change', e => {
     ui.view = e.target.value;
     el('legend-board').hidden = ui.view !== 'board';
