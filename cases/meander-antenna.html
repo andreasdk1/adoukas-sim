@@ -67,7 +67,7 @@
 
   <dl class="physics-box">
     <div><dt>Physics</dt><dd>Full-wave electromagnetics: every training point is a real openEMS FDTD solve of Maxwell's equations on a mesh checked for convergence. 288 geometry solves, plus 30 more for substrate temperature and Dk.</dd></div>
-    <div><dt>Role of ML</dt><dd>Speed only. A solve takes ~90 s; the surrogate answers in 2.6 ms, so you can drag through the design space instead of queueing solves. It is trained on openEMS solves and checked against held-out ones.</dd></div>
+    <div><dt>Role of ML</dt><dd>Speed only. A solve takes ~90 s; the surrogate answers in 2.6 ms, so you can drag through the design space instead of queueing solves. The ML surrogate is trained on openEMS solves and checked against held-out ones.</dd></div>
   </dl>
 
   <h2>Background</h2>
