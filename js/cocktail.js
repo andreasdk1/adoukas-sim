@@ -1,6 +1,5 @@
-// Martini on the rocks: playback of a pre-computed simulation of the drink
-// (ice melting, dilution, convection, heat in from the room) plus a live
-// natural-convection solve of the room air around the glass.
+// Martini on the rocks: playback of a pre-computed simulation of the drink, the ice and the
+// room air around the glass (melting, dilution, convection, heat in from the room).
 (function () {
   'use strict';
   const BASE = '../assets/cases/cocktail/';
@@ -19,11 +18,11 @@
     return g.getImageData(0, 0, img.width, img.height).data;
   }
 
-  Promise.all([fetch(BASE + 'meta.json').then(r => r.json()), loadImg(BASE + 'fields.png'), loadImg(BASE + 'vel.png'), loadImg(BASE + 'material.png'), loadImg(BASE + 'ice.png')])
-    .then(([meta, fImg, vImg, mImg, iImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg), pixels(iImg), iImg.width))
+  Promise.all([fetch(BASE + 'meta.json').then(r => r.json()), loadImg(BASE + 'fields.png'), loadImg(BASE + 'vel.png'), loadImg(BASE + 'material.png'), loadImg(BASE + 'ice.png'), loadImg(BASE + 'vela.png')])
+    .then(([meta, fImg, vImg, mImg, iImg, aImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg), pixels(iImg), iImg.width, pixels(aImg)))
     .catch(() => { el('ck-status').textContent = 'Could not load the simulation data.'; });
 
-  function init(meta, F, V, Mt, ICEPX, ICEW) {
+  function init(meta, F, V, Mt, ICEPX, ICEW, VA) {
     const NX = meta.nx, NY = meta.ny, NF = meta.frames.length, CELL = meta.cell_mm;
     const WMM = NX * CELL, HMM = NY * CELL;
     const [TLO, THI] = meta.T_range, ABVHI = meta.abv_range[1], VMAX = meta.v_max;
@@ -40,6 +39,9 @@
     const FSof = (f, k) => F[f * frameSize + k * 4 + 2] / 255;
     const Uof = (f, k) => (V[f * frameSize + k * 4] / 255 * 2 - 1) * VMAX;
     const Vof = (f, k) => (V[f * frameSize + k * 4 + 1] / 255 * 2 - 1) * VMAX;
+    const VMAXA = meta.v_max_air || 0.15;                                    // air velocity, from the simulation
+    const AUof = (f, k) => (VA[f * frameSize + k * 4] / 255 * 2 - 1) * VMAXA;
+    const AVof = (f, k) => (VA[f * frameSize + k * 4 + 1] / 255 * 2 - 1) * VMAXA;
 
     // ------------------------------------------------------------ view state
     const st = { pos: 0, playing: true, speed: 1, view: 'temp' };
@@ -47,6 +49,10 @@
     const DPR = Math.min(window.devicePixelRatio || 1, 2);
     const off = document.createElement('canvas'); off.width = NX; off.height = NY;
     const ox = off.getContext('2d'); const img = ox.createImageData(NX, NY);
+    const goff = document.createElement('canvas'); goff.width = NX; goff.height = NY;   // glass layer
+    const gx = goff.getContext('2d'); const gimg = gx.createImageData(NX, NY); const gd = gimg.data;
+    const gpad = new Uint8ClampedArray(gd.length); const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    const NB8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]; const padSrc = new Uint8Array(NX * NY);
 
     function resize() {
       // fit the whole glass in the window with room to spare (toolbar, legend, nav)
@@ -83,89 +89,6 @@
     const TMIN = -10, TMAX = 25;
     // dilution: water (0 % ABV) → martini (30 %)
     const AMAP = lut([[0, [70, 170, 235]], [0.5, [150, 200, 210]], [1, [236, 200, 106]]]);
-
-    // ------------------------------------------------- live air (natural convection)
-    const nx = NX, ny = NY, n = ny, N = nx * ny;     // air grid = data grid, j=0 at bottom
-    const dxa = CELL / 1000, G = 9.81, BETA = 1 / (273.15 + TROOM), NU = 1.5e-5, ALPHA_A = 2.2e-5;
-    const s = new Float32Array(N), u = new Float32Array(N), v = new Float32Array(N);
-    const nu = new Float32Array(N), nv = new Float32Array(N);
-    const Ta = new Float32Array(N).fill(TROOM), nTa = new Float32Array(N);
-    const dataK = (i, j) => (NY - 1 - j) * NX + i;   // grid (i, j up) -> data cell index
-    for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
-      s[i * n + j] = (mat[dataK(i, j)] === 0 && j > 0) ? 1 : 0;   // j = 0 is the table
-    }
-    function solidT(f0, f1, w) {
-      for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
-        const c = i * n + j;
-        if (s[c] === 0 && j > 0) { const k = dataK(i, j); Ta[c] = Tof(f0, k) * (1 - w) + Tof(f1, k) * w; }
-        if (j === 0) Ta[c] = TROOM;
-      }
-    }
-    function sample(x, y, f, dx, dy) {
-      x = Math.max(Math.min(x, nx - 1), 0); y = Math.max(Math.min(y, ny - 1), 0);
-      const x0 = Math.min(Math.floor(x - dx), nx - 2), y0 = Math.min(Math.floor(y - dy), ny - 2);
-      const tx = Math.min(1, Math.max(0, x - dx - x0)), ty = Math.min(1, Math.max(0, y - dy - y0));
-      const a = Math.max(x0, 0), b = Math.max(y0, 0);
-      return (1 - tx) * (1 - ty) * f[a * n + b] + tx * (1 - ty) * f[(a + 1) * n + b] + tx * ty * f[(a + 1) * n + b + 1] + (1 - tx) * ty * f[a * n + b + 1];
-    }
-    function airStep(dt) {
-      const k = dt / dxa;                           // cells per (m/s)
-      // buoyancy on v faces between two air cells
-      for (let i = 1; i < nx - 1; i++) for (let j = 1; j < ny - 1; j++) {
-        const c = i * n + j;
-        if (s[c] && s[c - 1]) v[c] += dt * G * BETA * (0.5 * (Ta[c] + Ta[c - 1]) - TROOM);
-      }
-      // viscosity
-      nu.set(u); nv.set(v);
-      for (let i = 1; i < nx - 1; i++) for (let j = 1; j < ny - 1; j++) {
-        const c = i * n + j;
-        if (s[c] && s[c - n]) nu[c] = u[c] + dt * NU / (dxa * dxa) * (u[c - n] + u[c + n] + (s[c + 1] ? u[c + 1] : -u[c]) + (s[c - 1] ? u[c - 1] : -u[c]) - 4 * u[c]);
-        if (s[c] && s[c - 1]) nv[c] = v[c] + dt * NU / (dxa * dxa) * (v[c - 1] + v[c + 1] + (s[c + n] ? v[c + n] : -v[c]) + (s[c - n] ? v[c - n] : -v[c]) - 4 * v[c]);
-      }
-      u.set(nu); v.set(nv);
-      // projection; the outer ring of cells acts as an open boundary to the room
-      for (let it = 0; it < 30; it++) {
-        for (let i = 1; i < nx - 1; i++) for (let j = 1; j < ny - 1; j++) {
-          const c = i * n + j; if (!s[c]) continue;
-          const sx0 = s[c - n], sx1 = s[c + n], sy0 = s[c - 1], sy1 = s[c + 1], ss = sx0 + sx1 + sy0 + sy1;
-          if (!ss) continue;
-          const p = -1.9 * (u[c + n] - u[c] + v[c + 1] - v[c]) / ss;
-          u[c] -= sx0 * p; u[c + n] += sx1 * p; v[c] -= sy0 * p; v[c + 1] += sy1 * p;
-        }
-      }
-      for (let j = 0; j < ny; j++) { u[j] = u[n + j]; v[j] = v[n + j]; u[(nx - 1) * n + j] = u[(nx - 2) * n + j]; v[(nx - 1) * n + j] = v[(nx - 2) * n + j]; }
-      for (let i = 0; i < nx; i++) { u[i * n + ny - 1] = u[i * n + ny - 2]; v[i * n + ny - 1] = v[i * n + ny - 2]; }
-      // advect velocity
-      nu.set(u); nv.set(v);
-      for (let i = 1; i < nx; i++) for (let j = 1; j < ny - 1; j++) {
-        const c = i * n + j;
-        if (s[c] && s[c - n]) {
-          const vv = 0.25 * (v[c - n] + v[c] + v[c - n + 1] + v[c + 1]);
-          nu[c] = sample(i - u[c] * k, j + 0.5 - vv * k, u, 0, 0.5);
-        }
-        if (s[c] && s[c - 1] && i < nx - 1) {
-          const uu = 0.25 * (u[c - 1] + u[c] + u[c + n - 1] + u[c + n]);
-          nv[c] = sample(i + 0.5 - uu * k, j - v[c] * k, v, 0.5, 0);
-        }
-      }
-      u.set(nu); v.set(nv);
-      // air temperature: advection, then diffusion of the advected field (operator
-      // split, so the update stays bounded); solids hold the glass/drink temperature
-      nTa.set(Ta);
-      for (let i = 1; i < nx - 1; i++) for (let j = 1; j < ny - 1; j++) {
-        const c = i * n + j;
-        if (!s[c]) continue;
-        const uc = 0.5 * (u[c] + u[c + n]), vc = 0.5 * (v[c] + v[c + 1]);
-        nTa[c] = sample(i + 0.5 - uc * k, j + 0.5 - vc * k, Ta, 0.5, 0.5);
-      }
-      const dif = dt * ALPHA_A / (dxa * dxa);
-      for (let i = 1; i < nx - 1; i++) for (let j = 1; j < ny - 1; j++) {
-        const c = i * n + j;
-        Ta[c] = s[c] ? nTa[c] + dif * (nTa[c - n] + nTa[c + n] + nTa[c - 1] + nTa[c + 1] - 4 * nTa[c]) : nTa[c];
-      }
-      for (let i = 0; i < nx; i++) { Ta[i * n + ny - 1] = TROOM; }
-      for (let j = 0; j < ny; j++) { Ta[j] = TROOM; Ta[(nx - 1) * n + j] = TROOM; }
-    }
 
     // --------------------------------------------------------- droplets
     // Condensation on the outside of the bowl: drops nucleate where the glass is
@@ -254,7 +177,8 @@
     const PA = Array.from({ length: 420 }, () => ({ x: 0, y: 0, life: 0 }));
     const liquidCells = []; for (let k = 0; k < NX * NY; k++) if (mat[k] === 2) liquidCells.push(k);
     function spawnL(p) { const k = liquidCells[(Math.random() * liquidCells.length) | 0]; p.x = (k % NX) + Math.random(); p.y = ((k / NX) | 0) + Math.random(); p.life = 40 + Math.random() * 80; }
-    function spawnA(p) { p.x = 1 + Math.random() * (nx - 2); p.y = 1 + Math.random() * (ny - 2); p.life = 60 + Math.random() * 160; }
+    const airCells = []; for (let k = 0; k < NX * NY; k++) if (mat[k] === 0) airCells.push(k);
+    function spawnA(p) { const k = airCells[(Math.random() * airCells.length) | 0]; p.x = (k % NX) + Math.random(); p.y = ((k / NX) | 0) + Math.random(); p.life = 60 + Math.random() * 160; }
     PL.forEach(spawnL); PA.forEach(spawnA);
 
     // ABV in the top and bottom 15 mm of the drink, liquid cells only (not ice)
@@ -278,7 +202,7 @@
       for (let r = 0; r < NY; r++) for (let c = 0; c < NX; c++) {
         const k = r * NX + c, o = k * 4, m = mat[k];
         if (m === 0) {
-          const ta = Ta[c * n + (NY - 1 - r)], dev = ta - TROOM;
+          const ta = Tof(f0, k) * (1 - w) + Tof(f1, k) * w, dev = ta - TROOM;
           if (st.view === 'temp' && dev < -0.2) {
             // air: shown as how much colder than the room it is (cool blue, deeper = colder)
             const f = Math.min(1, -dev / 12);
@@ -299,17 +223,187 @@
           const q = Math.max(0, Math.min(255, ((T - TMIN) / (TMAX - TMIN) * 255) | 0)) * 3;
           R = TMAP[q]; Gc = TMAP[q + 1]; B = TMAP[q + 2];
         }
-        if (m === 1) { R = R * 0.55 + 110; Gc = Gc * 0.55 + 118; B = B * 0.55 + 130; }   // glass: paler
+        if (m === 1) {                                   // glass: paler; drawn separately, clipped to its shape
+          gd[o] = R * 0.55 + 110; gd[o + 1] = Gc * 0.55 + 118; gd[o + 2] = B * 0.55 + 130; gd[o + 3] = 255;
+          d[o + 3] = 0; continue;
+        }
         if (fs > 0.02) { const a = Math.min(0.35, fs * 0.35); R += (238 - R) * a; Gc += (246 - Gc) * a; B += (255 - B) * a; }
         d[o] = R; d[o + 1] = Gc; d[o + 2] = B; d[o + 3] = 255;
       }
-      ox.putImageData(img, 0, 0);
+      // pad the glass colours a cell outwards, so smoothing doesn't fade the clipped edge
+      for (let pass = 0; pass < 2; pass++) {
+        gpad.set(gd);
+        for (let r = 0; r < NY; r++) for (let c = 0; c < NX; c++) {
+          const o = (r * NX + c) * 4; if (gd[o + 3]) continue;
+          for (const [dr, dc] of NB4) {
+            const rr = r + dr, cc = c + dc; if (rr < 0 || rr >= NY || cc < 0 || cc >= NX) continue;
+            const q = (rr * NX + cc) * 4; if (!gd[q + 3]) continue;
+            gpad[o] = gd[q]; gpad[o + 1] = gd[q + 1]; gpad[o + 2] = gd[q + 2]; gpad[o + 3] = 255; break;
+          }
+        }
+        gd.set(gpad);
+      }
+      // and the drink's (or else the air's) colours a cell under the glass, so both meet the exact
+      // wall line instead of leaving a staircase of unpainted specks along it
+      // (two steps, the second from cells filled in the first: reaches into the narrow tip of the V)
+      padSrc.fill(0);
+      for (let pass = 1; pass <= 2; pass++) for (let k = 0; k < NX * NY; k++) {
+        if (mat[k] !== 1 || padSrc[k]) continue;
+        const r = (k / NX) | 0, c = k % NX, o = k * 4;
+        let src = -1, best = 0;
+        for (const [dr, dc] of NB8) {
+          const rr = r + dr, cc = c + dc; if (rr < 0 || rr >= NY || cc < 0 || cc >= NX) continue;
+          const q = rr * NX + cc;
+          // drink first, then air; in the second pass also cells filled in the first
+          const rank = mat[q] === 2 || padSrc[q] === 2 ? 3 : mat[q] === 0 || padSrc[q] === 3 ? 2 : 0;
+          if (rank > best && !(pass === 1 && padSrc[q])) { best = rank; src = q; }
+        }
+        if (src >= 0) {
+          const q4 = src * 4; d[o] = d[q4]; d[o + 1] = d[q4 + 1]; d[o + 2] = d[q4 + 2]; d[o + 3] = d[q4 + 3];
+          padSrc[k] = best === 3 ? 2 : 3;
+        }
+      }
+      ox.putImageData(img, 0, 0); gx.putImageData(gimg, 0, 0);
+      for (let k = 0; k < NX * NY; k++) if (mat[k] !== 1) gd[k * 4 + 3] = 0;   // reset the padding
       cx.clearRect(0, 0, W, H);
       cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
       cx.drawImage(off, 0, 0, W, H);
+      cx.save(); glassPath(); cx.clip('evenodd'); cx.drawImage(goff, 0, 0, W, H); cx.restore();
       drawIce(f0, f1, w);
+      drawSurface(f0, f1, w);
       drawGlass();
       drawDrops();
+    }
+    // ------------------------------------------------------------ the liquid surface
+    // Menisci from capillarity (to scale): the surface climbs the glass (contact angle ~30°)
+    // and the ice (~0°) and relaxes over the capillary length lc = sqrt(sigma / rho g), which
+    // follows the alcohol content of the top layer. Between them, the surface height from the
+    // pressure under the (rigid-lid) surface in the simulation, exaggerated SURF_EXAG times.
+    const SURF_EXAG = 12;
+    const SIG_A = [0, 0.062, 0.123, 0.24, 0.36], SIG_V = [72.0, 56.4, 48.1, 38.0, 33.0];
+    function sigmaOf(abv) {
+      let i = 0; while (i < SIG_A.length - 2 && abv > SIG_A[i + 1]) i++;
+      const f = Math.min(1, Math.max(0, (abv - SIG_A[i]) / (SIG_A[i + 1] - SIG_A[i])));
+      return (SIG_V[i] + (SIG_V[i + 1] - SIG_V[i]) * f) * 1e-3;
+    }
+    const topRow = new Int16Array(NX).fill(-1);
+    for (let c = 0; c < NX; c++) for (let r = 0; r < NY; r++) if (mat[r * NX + c] === 2) { topRow[c] = r; break; }
+    // Pose of ice body ib between two stored frames: centre and angle interpolated, then pushed
+    // back out of the glass if needed. A piece rolling along the wall between frames would
+    // otherwise be drawn partly inside it, which the simulation never allows.
+    const ALPHA_W = Math.atan(tanA), CA_W = Math.cos(ALPHA_W), SA_W = Math.sin(ALPHA_W);
+    function icePose(ib, f0, f1, w) {
+      const b = IB[ib], fr = w < 0.5 ? f0 : f1;
+      const p0 = meta.frames[f0].bodies[ib], p1 = meta.frames[f1].bodies[ib];
+      const dth = ((p1[2] - p0[2] + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+      let x = p0[0] + (p1[0] - p0[0]) * w, y = p0[1] + (p1[1] - p0[1]) * w;
+      const th = p0[2] + dth * w;
+      if (w > 0 && w < 1) {
+        const nC = b.cells, cell = 2 * b.half / nC, cs = Math.cos(th), sn = Math.sin(th);
+        for (const side of [-1, 1]) {
+          let pen = 0;
+          for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
+            if (ICEPX[((fr * nC + r) * ICEW + ib * nC + c) * 4] < 77) continue;
+            const lx = (c + 0.5) * cell - b.half, ly = b.half - (r + 0.5) * cell;
+            const px = x + cs * lx - sn * ly, py = y + sn * lx + cs * ly;
+            pen = Math.max(pen, (side * (px - Gm.cx) - (py - Gm.apex_in) * tanA) * CA_W + 0.5 * cell + 0.15);
+          }
+          if (pen > 0) { x += -side * CA_W * pen; y += SA_W * pen; }
+        }
+      }
+      return { x, y, th, fr };
+    }
+    const H_MEN = Math.SQRT2 * Math.sqrt(0.038 / (968 * 9.81)) * 1000;   // mm, ~2.8: highest the drink climbs ice
+    function waterlines(f0, f1, w) {
+      const fr = w < 0.5 ? f0 : f1, out = [];
+      IB.forEach((b, ib) => {
+        const { x: bx, y: by, th } = icePose(ib, f0, f1, w);
+        const nC = b.cells, cell = 2 * b.half / nC, cs = Math.cos(th), sn = Math.sin(th);
+        let xl = 1e9, xr = -1e9, area = 0; const pts = [];
+        for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
+          const a = ICEPX[((fr * nC + r) * ICEW + ib * nC + c) * 4] / 255;
+          if (a < 0.3) continue;
+          area += a * cell * cell;
+          const lx = (c + 0.5) * cell - b.half, ly = b.half - (r + 0.5) * cell;
+          const x = bx + cs * lx - sn * ly, y = by + sn * lx + cs * ly;
+          pts.push([x, y]);
+          // the drink reaches ice up to a meniscus height above the flat level (also under a rim)
+          if (y > Gm.fill_y - 1.0 && y <= Gm.fill_y + H_MEN) { xl = Math.min(xl, x); xr = Math.max(xr, x); }
+        }
+        if (area < 6 || xl > xr) return;
+        // freeboard right at each waterline edge: the drink can only climb the ice as high as the
+        // ice reaches there (a tipped piece's corner further in must not lift the meniscus)
+        let fbl = 0, fbr = 0;
+        for (const [x, y] of pts) {
+          if (x < xl + cell) fbl = Math.max(fbl, y - Gm.fill_y);
+          if (x > xr - cell) fbr = Math.max(fbr, y - Gm.fill_y);
+        }
+        out.push({ xl, xr, fbl, fbr });
+      });
+      return out.sort((a, b) => a.xl - b.xl);
+    }
+    function drawSurface(f0, f1, w) {
+      const g = Gm, fy = g.fill_y, hw = (fy - g.apex_in) * tanA;
+      // capillary length from the top layer's alcohol content
+      let as = 0, an = 0;
+      for (let c = 0; c < NX; c++) if (topRow[c] >= 0) { const k = topRow[c] * NX + c; if (FSof(f0, k) < 0.02) { as += ABVof(f0, k); an++; } }
+      const lc = Math.sqrt(sigmaOf(an ? as / an : 0.24) / (968 * 9.81)) * 1000;      // mm
+      // Meniscus height h = lc sqrt(2 (1 - cos phi)), phi = slope of the surface where it meets the
+      // solid. The glass leans outwards (wall at 90° - alpha from horizontal) and the drink meets it
+      // at ~30°, so phi = 90° - alpha - 30° (about 20°): only ~0.35 lc. Ice (contact angle 0, near
+      // vertical faces): up to sqrt(2) lc, but never above the ice itself.
+      const phiG = Math.max(0, Math.PI / 2 - ALPHA_W - Math.PI / 6);
+      const hGlass = lc * Math.sqrt(2 * (1 - Math.cos(phiG))), hIce = fb => Math.min(lc * Math.SQRT2, fb);
+      const e0 = meta.frames[f0].eta_um, e1 = meta.frames[f1].eta_um;
+      const eta = x => {
+        if (!e0) return 0;
+        const u = Math.min(e0.length - 1.001, Math.max(0, x / CELL - 0.5)), i = Math.floor(u), t = u - i;
+        const a = e0[i] * (1 - t) + e0[i + 1] * t, b = e1[i] * (1 - t) + e1[i + 1] * t;
+        return (a * (1 - w) + b * w) * 1e-3 * SURF_EXAG;                                 // mm, exaggerated
+      };
+      // free stretches of surface between the glass and the cubes
+      // the drink touches the glass where the wall is at the meniscus height (the wall slopes outwards)
+      const xgL = g.cx - (fy + hGlass - g.apex_in) * tanA, xgR = g.cx + (fy + hGlass - g.apex_in) * tanA;
+      const segs = []; let xa = xgL, ha = hGlass;
+      for (const c of waterlines(f0, f1, w)) {
+        if (c.xr < xa || c.xl > xgR) continue;
+        if (c.xl > xa) segs.push([xa, ha, c.xl, hIce(c.fbl)]);
+        xa = Math.max(xa, c.xr); ha = hIce(c.fbr);
+      }
+      segs.push([xa, ha, xgR, hGlass]);
+      // colour of the liquid just under the surface, column by column
+      const d = img.data;
+      for (const [x0, h0, x1, h1] of segs) {
+        if (x1 - x0 < 0.2) continue;
+        const N = Math.max(4, Math.ceil((x1 - x0) / 0.25)), xs = [], ys = [];
+        for (let i = 0; i <= N; i++) {
+          const x = x0 + (x1 - x0) * i / N;
+          ys.push(fy + h0 * Math.exp(-(x - x0) / lc) + h1 * Math.exp(-(x1 - x) / lc) + eta(x)); xs.push(x);
+        }
+        // liquid above the flat line (menisci, bulges): fill with the colour beneath
+        cx.save();
+        const xStart = x0 === xgL ? g.cx - hw : xs[0], xEnd = x1 === xgR ? g.cx + hw : xs[N];
+        cx.beginPath(); cx.moveTo(X(xStart), Y(fy));
+        for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.max(ys[i], fy)));
+        cx.lineTo(X(xEnd), Y(fy)); cx.closePath();
+        const cm = Math.min(NX - 1, Math.max(0, Math.round((x0 + x1) / 2 / CELL)));
+        const k = Math.max(0, topRow[cm]) * NX + cm, o = k * 4;
+        cx.fillStyle = `rgb(${d[o]},${d[o + 1]},${d[o + 2]})`; cx.fill();
+        // dips below the flat line: show the air just above the drink there (clearing the canvas
+        // instead would expose the page background as a dark band)
+        const ka = Math.max(0, topRow[cm] - 1) * NX + cm, oa = ka * 4;
+        cx.fillStyle = `rgb(${d[oa]},${d[oa + 1]},${d[oa + 2]})`;
+        cx.beginPath(); cx.moveTo(X(xs[0]), Y(fy));
+        for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.min(ys[i], fy)));
+        cx.lineTo(X(xs[N]), Y(fy)); cx.closePath(); cx.fill();
+        cx.restore();
+        // the surface itself: a soft sheen and a fine highlight
+        cx.save(); cx.lineJoin = 'round'; cx.lineCap = 'round';
+        cx.beginPath(); cx.moveTo(X(xs[0]), Y(ys[0])); for (let i = 1; i <= N; i++) cx.lineTo(X(xs[i]), Y(ys[i]));
+        cx.strokeStyle = 'rgba(200,225,255,0.16)'; cx.lineWidth = 4; cx.stroke();
+        cx.strokeStyle = 'rgba(255,255,255,0.62)'; cx.lineWidth = 0.9; cx.stroke();
+        cx.restore();
+      }
     }
     // Ice cubes: rigid bodies drawn from their own stored shape, position and angle
     const IB = meta.ice_bodies || [];
@@ -317,10 +411,7 @@
     function drawIce(f0, f1, w) {
       const fr = w < 0.5 ? f0 : f1;                     // shape from the nearest frame
       IB.forEach((b, ib) => {
-        const p0 = meta.frames[f0].bodies[ib], p1 = meta.frames[f1].bodies[ib];
-        // angles interpolated the short way round
-        const dth = ((p1[2] - p0[2] + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-        const x = p0[0] + (p1[0] - p0[0]) * w, y = p0[1] + (p1[1] - p0[1]) * w, th = p0[2] + dth * w;
+        const { x, y, th } = icePose(ib, f0, f1, w);
         const nC = b.cells, g = iceCv[ib].getContext('2d'), im = g.createImageData(nC, nC);
         const cellA = (2 * b.half / nC) ** 2;
         let area = 0;
@@ -341,6 +432,17 @@
         cx.drawImage(iceCv[ib], -size / 2, -size / 2, size, size);
         cx.restore();
       });
+    }
+    // glass body: outer silhouette (bowl, stem, foot) minus the bowl's inside, as one path
+    function glassPath() {
+      const g = Gm, xo = (g.rim_y - g.apex_out) * tanA;
+      cx.beginPath();
+      cx.moveTo(X(g.cx - xo), Y(g.rim_y)); cx.lineTo(X(g.cx - 3.2), Y(g.apex_out + 2.5));
+      cx.lineTo(X(g.cx - 3.2), Y(22)); cx.quadraticCurveTo(X(g.cx - 5.5), Y(19.5), X(g.cx - 36), Y(19.5));
+      cx.lineTo(X(g.cx - 36), Y(15)); cx.lineTo(X(g.cx + 36), Y(15)); cx.lineTo(X(g.cx + 36), Y(19.5));
+      cx.quadraticCurveTo(X(g.cx + 5.5), Y(19.5), X(g.cx + 3.2), Y(22)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 2.5));
+      cx.lineTo(X(g.cx + xo), Y(g.rim_y)); cx.closePath();
+      cx.moveTo(X(g.cx - g.half_rim_in), Y(g.rim_y)); cx.lineTo(X(g.cx), Y(g.apex_in)); cx.lineTo(X(g.cx + g.half_rim_in), Y(g.rim_y)); cx.closePath();
     }
     function drawGlass() {
       const g = Gm, t = g.wall, xo = (g.rim_y - g.apex_out) * tanA;
@@ -365,10 +467,6 @@
       grd.addColorStop(0, 'rgba(255,255,255,0.35)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
       cx.strokeStyle = grd; cx.lineWidth = 3;
       cx.beginPath(); cx.moveTo(X(g.cx - xo + 4), Y(g.rim_y - 6)); cx.lineTo(X(g.cx - 14), Y(g.apex_out + 22)); cx.stroke();
-      // liquid surface
-      const hw = (g.fill_y - g.apex_in) * tanA;
-      cx.strokeStyle = 'rgba(255,255,255,0.55)'; cx.lineWidth = 1;
-      cx.beginPath(); cx.moveTo(X(g.cx - hw), Y(g.fill_y)); cx.lineTo(X(g.cx + hw), Y(g.fill_y)); cx.stroke();
       cx.restore();
     }
     function drawDrops() {
@@ -403,17 +501,17 @@
         p.x = x2; p.y = y2;
       }
       px.stroke();
-      // air (live, real time)
+      // air (stored flow, same time-lapse as the drink)
       px.strokeStyle = 'rgba(210,225,250,0.4)'; px.lineWidth = 0.9;
       px.beginPath();
-      const k = 0.016 * 2 / dxa;
       for (const p of PA) {
-        const uu = sample(p.x, p.y, u, 0, 0.5), vv = sample(p.x, p.y, v, 0.5, 0);
-        const x2 = p.x + uu * k * 3, y2 = p.y + vv * k * 3;
-        px.moveTo(p.x * cs, (ny - p.y) * cs); px.lineTo(x2 * cs, (ny - y2) * cs);
+        const k = Math.min(NY - 1, p.y | 0) * NX + Math.min(NX - 1, p.x | 0);
+        if (mat[k] !== 0 || --p.life < 0) { spawnA(p); continue; }
+        const uu = AUof(f0, k) * (1 - w) + AUof(f1, k) * w, vv = AVof(f0, k) * (1 - w) + AVof(f1, k) * w;
+        const x2 = p.x + uu / VMAXA * 1.4, y2 = p.y - vv / VMAXA * 1.4;
+        px.moveTo(p.x * cs, p.y * cs); px.lineTo(x2 * cs, y2 * cs);
         p.x = x2; p.y = y2;
-        const c = (p.x | 0) * n + (p.y | 0);
-        if (--p.life < 0 || p.x < 1 || p.y < 1 || p.x > nx - 2 || p.y > ny - 2 || !s[c]) spawnA(p);
+        if (p.x < 0 || p.y < 0 || p.x >= NX || p.y >= NY) spawnA(p);
       }
       px.stroke();
     }
@@ -459,12 +557,14 @@
     function frame(now) {
       const dtw = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;   // rAF time can precede start()
       if (st.playing) {
-        st.pos += dtw * 1.6 * st.speed;
+        // playback pace in simulated seconds per second at 1×, whatever the frame spacing
+        const f0_ = Math.min(NF - 2, Math.floor(st.pos)), tf = meta.frames[f0_].t;
+        const pace = tf < 1200 ? 24 : tf < 3600 ? 96 : 480;
+        st.pos += dtw * st.speed * pace / Math.max(1e-6, meta.frames[f0_ + 1].t - tf);
         if (st.pos >= NF - 1) { st.pos = NF - 1; st.playing = false; el('ck-play').textContent = 'Replay'; }
       }
       const [f0, f1, w] = frameAt(st.pos);
-      solidT(f0, f1, w);
-      airStep(0.016); airStep(0.016);
+
       updateDrops(f0, f1, w, dtw);
       draw(); drawParticles(f0, f1, w); readouts(); drawChart();
       if (running) raf = requestAnimationFrame(frame);
@@ -488,7 +588,7 @@
     document.querySelectorAll('input[name="ck-speed"]').forEach(r => r.addEventListener('change', e => { st.speed = +e.target.value; }));
 
     resize();
-    for (let k = 0; k < 150; k++) { solidT(0, 0, 0); airStep(0.016); }
+
     el('ck-status').hidden = true;
     start();
     new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; onScreen ? start() : stop(); }).observe(stage);

@@ -61,7 +61,7 @@
       <div class="ck-legend">
         <div id="ck-legend-temp" class="lg"><span>−10 °C</span><i class="ramp ck-temp"></i><span>25 °C</span><em>drink and glass</em><span class="ck-air-key"><i></i>air colder than the room</span></div>
         <div id="ck-legend-abv" class="lg" hidden><span>≤ 20 %</span><i class="ramp ck-abv"></i><span>30 % ABV</span><em>alcohol content (meltwater shows as blue)</em></div>
-        <div id="ck-legend-flow" class="lg" hidden><em>streaks show the direction of flow in the drink (time-lapse) and in the air (real time)</em></div>
+        <div id="ck-legend-flow" class="lg" hidden><em>streaks show the direction of flow in the drink and in the air</em></div>
       </div>
     </div>
 
@@ -70,6 +70,8 @@
       <div class="ck-transport">
         <button id="ck-play" class="btn btn-primary btn-sm" type="button">Pause</button>
         <div class="seg seg-sm" role="radiogroup" aria-label="Playback speed">
+          <label><input type="radio" name="ck-speed" value="0.25"><span>¼×</span></label>
+          <label><input type="radio" name="ck-speed" value="0.5"><span>½×</span></label>
           <label><input type="radio" name="ck-speed" value="1" checked><span>1×</span></label>
           <label><input type="radio" name="ck-speed" value="3"><span>3×</span></label>
           <label><input type="radio" name="ck-speed" value="8"><span>8×</span></label>
@@ -90,32 +92,34 @@
 
 <main class="case-body">
 <div class="metric-block">
-    <span class="metric-number">40 min</span>
-    <span class="metric-label">until the last of the ice is gone. The drink then takes about 2 h 10 min more to reach 20 °C.</span>
+    <span class="metric-number">2.6 °C</span>
+    <span class="metric-label">is as cold as a martini poured at room temperature gets on these rocks. The ice is gone after 10 min, before it could do more, and the drink is back at 20 °C after about 2 h 55 min.</span>
   </div>
 
   <dl class="physics-box">
-    <div><dt>Physics</dt><dd>Heat conduction through glass, ice and drink; melting with latent heat; the ice cubes as floating rigid bodies (buoyancy, weight, drag from the currents, collisions); buoyant flow in the drink driven by both temperature and alcohol content; mixing of meltwater into the cocktail; heat from the room by natural convection, radiation and condensation on the cold glass. The room air around the glass is solved live in your browser.</dd></div>
-    <div><dt>Role of ML</dt><dd>None. It's a straight physics simulation, computed once in Python and played back here as a time-lapse.</dd></div>
+    <div><dt>Physics</dt><dd><ul class="phys-list"><li><b>Heat</b><span>Transient conduction through the 3 mm glass wall, the ice and the drink</span></li><li><b>Melting</b><span>Enthalpy-method phase change with latent heat; meltwater mixing into the cocktail</span></li><li><b>Drink flow</b><span>Navier–Stokes flow driven by buoyancy from both temperature and alcohol content</span></li><li><b>Surface tension</b><span>Marangoni flow from surface-tension differences in alcohol content and temperature</span></li><li><b>Floating ice</b><span>Free rigid bodies with buoyancy, fluid drag, contact and friction, capillary attraction and breakup</span></li><li><b>Room air</b><span>Natural convection, condensation on the cold glass and radiation, coupled both ways to the drink</span></li></ul></dd></div>
+    <div><dt>Role of ML</dt><dd>This study is a direct physics simulation. Since the aim is to show how heat, flow and ice interact over time, the full model is solved once in Python and replayed here as a time-lapse, so each frame reflects the computed physics.</dd></div>
   </dl>
 
   <h2>What you're watching</h2>
   <ul>
-    <li><strong>The ice:</strong> two cubes from a −18 °C freezer, floating about 95 % submerged. Each is a free rigid body: the currents push it around, buoyancy and weight turn it, and it bumps into the glass and the other cube. They warm to 0 °C within the first minute, then melt unevenly, which changes their shape and how they float. At about 30 minutes, with around 14 % of the ice left, the melted-down cubes become unstable and flip, and one is then carried right across the glass by the surface currents.</li>
-    <li><strong>Sinking meltwater:</strong> a martini (gin and vermouth, about 30 % alcohol) is lighter than water: about 962 against 1000 kg/m³. The cold, fresh meltwater coming off the ice is the densest liquid in the glass, so it sinks in streams and pools in the bottom of the V. Switch to <em>Dilution</em> to watch the bottom get watered down first: after 20 minutes the top is still at 26.7 % alcohol while the bottom is down to 24.3 %. By the end the whole drink is at about 24 %, roughly a fifth weaker than poured, and still slightly stronger at the top.</li>
-    <li><strong>Condensation:</strong> once the glass drops below the dew point of the room (12.6 °C at 22 °C and 55 % humidity), water condenses on it. That isn't just cosmetic: condensation releases latent heat into the glass and supplies about a fifth of the heat that melts the ice.</li>
-    <li><strong>The cold air:</strong> air next to the glass cools, gets denser and slides down the bowl and the stem onto the table. The room air is solved live, in real time, using the glass temperature from the simulation.</li>
+    <li><strong>Chilling, until the ice runs out:</strong> the martini goes in at room temperature, 22 °C, and two cubes from a −18 °C freezer are dropped in. The drink cools fast, but the ice can only absorb so much heat: by 10 min it has all melted and the drink bottoms out at 2.6 °C. With this much ice, the glass, the drink and the meltwater together would settle at about 2.9 °C; the drink dips a little below that only because the glass hasn't cooled all the way yet. After that it warms back up towards room temperature.</li>
+    <li><strong>The ice:</strong> each piece is a free-floating rigid body, about 95 % submerged. The sinking meltwater sets up a circulation that comes up in the middle of the glass and spreads outwards along the surface, and that carries the cubes to the walls within the first minute. They melt fastest underneath, so they soon become top-heavy: within the first 2 minutes they capsize and come to rest leaning against the glass, where they keep melting into rounded shapes.</li>
+    <li><strong>Sinking meltwater:</strong> a martini (gin and vermouth, about 30 % alcohol) is lighter than water: about 962 against 1000 kg/m³. The fresh meltwater coming off the ice is the densest liquid in the glass, so it sinks and pools in the bottom of the V. Switch to <em>Dilution</em> to watch the bottom get watered down first: after 20 minutes the top is at 24.5 % alcohol and the bottom at 23.5 %. By the end the drink averages 24 %, about a fifth weaker than poured, and is still a little stronger at the top.</li>
+    <li><strong>The surface:</strong> the drink climbs the glass and the ice in a meniscus (drawn to scale), and surface-tension differences between fresh meltwater, drink and warmer or colder liquid pull the surface along: Marangoni flow. During the warm-up the surface next to the glass is 2–3 °C warmer than in the middle, so it is pulled inwards from both sides in a slow swirl, about 0.1 mm/s. The rise and fall of the surface comes from the simulated pressure under it and is exaggerated 12× so you can see it.</li>
+    <li><strong>Condensation:</strong> once the glass drops below the dew point of the room (12.6 °C at 22 °C and 55 % humidity), water condenses on it and releases its latent heat into the glass. While the ice lasts, that supplies about 18 % of the heat coming in from the room.</li>
+    <li><strong>The cold air:</strong> air next to the glass cools, gets denser and slides down the bowl and the stem onto the table, and a layer of chilled air sits in the rim above the drink. The air is part of the simulation: it is what carries the room's heat back to the glass, and its vapour is what condenses on it.</li>
   </ul>
 
   <h2>Setup</h2>
-  <p>A martini glass (3 mm wall) filled to 10 mm below the rim, with the drink poured at 3 °C into a glass at room temperature, plus two 16 mm ice cubes at −18 °C. Room at 22 °C and 55 % relative humidity. Yes, ice in a martini glass is unusual. It just looks better.</p>
+  <p>A martini glass (3 mm wall) filled to 10 mm below the rim with a martini at room temperature, plus two 16 mm ice cubes at −18 °C. Room at 22 °C and 55 % relative humidity. In this 2D slice the ice is about 21 % of the drink, so think of a well-iced drink, more like three or four big cubes in a real glass. Ice in a martini glass is unusual, but it makes the physics much easier to see.</p>
 
   <h2>Stated limits</h2>
   <ul>
-    <li>This is a 2D slice through the glass, so the mechanisms are right and the times are the right order of magnitude, but they're indicative rather than exact for a real 3D glass.</li>
-    <li>The ice melts at 0 °C. In reality ice in alcohol also slowly dissolves slightly below 0 °C. The drink doesn't evaporate, and the small part of the ice above the waterline doesn't exchange heat.</li>
-    <li>Being a 2D slice, the cubes can only turn in the plane you're looking at, which is exactly the tumble you'd see from the side.</li>
-    <li>Flow in the drink is resolved on a 0.75 mm grid: plumes and layering are captured, while the finest eddies are smoothed out.</li>
+    <li>This is a 2D slice through the glass, so the mechanisms are right and the times are the right order of magnitude, but they're indicative rather than exact for a real 3D glass. The ice can only turn in the plane you're looking at.</li>
+    <li>The surface is flat in the simulation: no waves. Its rise and fall is derived from the pressure under it and shown exaggerated. Waves from the drifting ice would be micrometres high, and the capsizing would make ripples of about a tenth of a millimetre.</li>
+    <li>The ice melts at 0 °C; in reality ice in alcohol also dissolves slowly below 0 °C. The drink doesn't evaporate.</li>
+    <li>Flow is resolved on a 0.75 mm grid. Plumes, layering and the surface flows are captured; the finest eddies, the sharpest meltwater fronts and ice chips smaller than a few millimetres are not resolved in detail. On a finer grid the ice melts somewhat faster, so the melting times are good to about a minute or two.</li>
   </ul>
 </main>
 
