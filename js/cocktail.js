@@ -44,7 +44,7 @@
     const AVof = (f, k) => (VA[f * frameSize + k * 4 + 1] / 255 * 2 - 1) * VMAXA;
 
     // ------------------------------------------------------------ view state
-    const st = { pos: 0, playing: true, speed: 1, view: 'temp' };
+    const st = { pos: 0, playing: true, speed: 0.25, view: 'temp' };
     let W = 0, H = 0, sc = 1;
     const DPR = Math.min(window.devicePixelRatio || 1, 2);
     const off = document.createElement('canvas'); off.width = NX; off.height = NY;
