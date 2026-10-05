@@ -210,11 +210,17 @@
           } else d[o + 3] = 0;
           continue;
         }
-        const T = Tof(f0, k) * (1 - w) + Tof(f1, k) * w;
-        const fs = FSof(f0, k) * (1 - w) + FSof(f1, k) * w;
+        // in the drink, weight each frame by how much liquid the cell holds in it: when a cube moves a long way
+        // between two frames (the capsize), the cells it leaves would otherwise blend in the ice's own values
+        // (0 °C, pure water) and flash up as a cold, diluted patch until the next frame
+        const fs0 = FSof(f0, k), fs1 = FSof(f1, k);
+        let w0 = 1 - w, w1 = w;
+        if (m === 2) { const a0 = w0 * (1 - fs0), a1 = w1 * (1 - fs1), s_ = a0 + a1; if (s_ > 0.05) { w0 = a0 / s_; w1 = a1 / s_; } }
+        const T = Tof(f0, k) * w0 + Tof(f1, k) * w1;
+        const fs = fs0 * (1 - w) + fs1 * w;
         let R, Gc, B;
         if (st.view === 'abv' && m === 2) {
-          const a = ABVof(f0, k) * (1 - w) + ABVof(f1, k) * w;
+          const a = ABVof(f0, k) * w0 + ABVof(f1, k) * w1;
           const q = Math.max(0, Math.min(255, ((a - 0.2) / 0.1 * 255) | 0)) * 3;   // 20–30 % ABV, where the action is
           R = AMAP[q]; Gc = AMAP[q + 1]; B = AMAP[q + 2];
         } else if (st.view === 'flow' && m === 2) {
