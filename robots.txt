@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /nyxx_homepage_final.html
+Disallow: /other/
+Disallow: /assets/NyxX-old/
+
+Sitemap: https://sim.adoukas.eu/sitemap.xml
