@@ -91,7 +91,7 @@ style.css
 ### 2. Hero
 - Two-column layout: left = text, right = stat cards
 - **Eyebrow:** "Electromagnetic · Thermal · RF simulation"
-- **H1:** "High-fidelity simulation for hardware that matters" — "hardware that matters" in `--cyan`
+- **H1:** "High-fidelity simulation for engineering decisions." — "decisions" in italics (`<em>`)
 - **Byline:** "Dr. Andreas Doukas" — indigo, left border accent, NOT all caps
 - **Subtext:** "Independent Ansys consulting for power electronics, EM machines, PCB integrity, and thermal management. PhD-level expertise, startup-friendly engagement."
 - **CTA button:** "Request a consultation" — dark navy, no border-radius > 4px
