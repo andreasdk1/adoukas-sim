@@ -93,8 +93,8 @@
 
 <main class="case-body">
 <div class="metric-block">
-    <span class="metric-number">2.6 °C</span>
-    <span class="metric-label">is as cold as a martini poured at room temperature gets on these rocks. The ice is gone after 10 min, before it could do more, and the drink is back at 20 °C after about 2 h 55 min.</span>
+    <span class="metric-number">0.9 °C</span>
+    <span class="metric-label">is as cold as a martini poured at room temperature gets on these rocks, 3 minutes after the ice goes in. It stays below 2 °C for about 34 min, the ice is gone after 38 min, and the drink is no longer chilled (above 10 °C) after about 59 min.</span>
   </div>
 
   <dl class="physics-box">
@@ -104,23 +104,23 @@
 
   <h2>What you're watching</h2>
   <ul>
-    <li><strong>Chilling, until the ice runs out:</strong> the martini goes in at room temperature, 22 °C, and two cubes from a −18 °C freezer are dropped in. The drink cools fast, but the ice can only absorb so much heat: by 10 min it has all melted and the drink bottoms out at 2.6 °C. With this much ice, the glass, the drink and the meltwater together would settle at about 2.9 °C; the drink dips a little below that only because the glass hasn't cooled all the way yet. After that it warms back up towards room temperature.</li>
-    <li><strong>The ice:</strong> each piece is a free-floating rigid body, about 95 % submerged. The sinking meltwater sets up a circulation that comes up in the middle of the glass and spreads outwards along the surface, and that carries the cubes to the walls within the first minute. They melt fastest underneath, so they soon become top-heavy: within the first 2 minutes they capsize and come to rest leaning against the glass, where they keep melting into rounded shapes.</li>
-    <li><strong>Sinking meltwater:</strong> a martini (gin and vermouth, about 30 % alcohol) is lighter than water: about 962 against 1000 kg/m³. The fresh meltwater coming off the ice is the densest liquid in the glass, so it sinks and pools in the bottom of the V. Switch to <em>Dilution</em> to watch the bottom get watered down first: after 20 minutes the top is at 24.5 % alcohol and the bottom at 23.5 %. By the end the drink averages 24 %, about a fifth weaker than poured, and is still a little stronger at the top.</li>
-    <li><strong>The surface:</strong> the drink climbs the glass and the ice in a meniscus (drawn to scale), and surface-tension differences between fresh meltwater, drink and warmer or colder liquid pull the surface along: Marangoni flow. During the warm-up the surface next to the glass is 2–3 °C warmer than in the middle, so it is pulled inwards from both sides in a slow swirl, about 0.1 mm/s. The rise and fall of the surface comes from the simulated pressure under it and is exaggerated 12× so you can see it.</li>
-    <li><strong>Condensation:</strong> once the glass drops below the dew point of the room (12.6 °C at 22 °C and 55 % humidity), water condenses on it and releases its latent heat into the glass. While the ice lasts, that supplies about 18 % of the heat coming in from the room.</li>
+    <li><strong>Chilling, then holding:</strong> the martini goes in at room temperature, 22 °C, and two cubes from a −18 °C freezer are dropped in. Within 3 minutes the drink is at 0.9 °C. That is more ice than the drink and the glass can melt with their own heat: they could melt only about 48 % of it. So the drink stays just above 0 °C while heat from the room melts the rest. The ice lasts 38 min; after that the drink warms back towards room temperature and is within 2 °C of it after about 2 h 35 min.</li>
+    <li><strong>The ice:</strong> each piece is a free-floating rigid body, about 95 % submerged. The sinking meltwater sets up a circulation that comes up in the middle of the glass and spreads outwards along the surface, and that carries the cubes to the walls within the first minute. They melt fastest underneath, so they soon become top-heavy: after about 3 minutes they capsize and come to rest leaning against the glass, where they keep melting into rounded shapes.</li>
+    <li><strong>Sinking meltwater:</strong> a martini (gin and vermouth, about 30 % alcohol) is lighter than water: about 962 against 1000 kg/m³. The fresh meltwater coming off the ice is the densest liquid in the glass, so it sinks and pools in the bottom of the V. Switch to <em>Dilution</em> to watch the bottom get watered down first: after 20 minutes the top is at 21.6 % alcohol and the bottom at 20.2 %. By the end the drink averages 19 %, more than a third weaker than poured, and by then evenly mixed.</li>
+    <li><strong>The surface:</strong> the drink climbs the glass and the ice in a meniscus (drawn to scale), and surface-tension differences between fresh meltwater, drink and warmer or colder liquid pull the surface along: Marangoni flow. Once the ice has gone, the surface next to the glass is 2–3 °C warmer than in the middle, so it is pulled inwards from both sides in a slow swirl, about a millimetre a minute. The rise and fall of the surface comes from the simulated pressure under it and is exaggerated 12× so you can see it.</li>
+    <li><strong>Condensation:</strong> once the glass drops below the dew point of the room (12.6 °C at 22 °C and 55 % humidity), water condenses on it and releases its latent heat into the glass. While the ice lasts, that supplies about 17 % of the heat coming in from the room.</li>
     <li><strong>The cold air:</strong> air next to the glass cools, gets denser and slides down the bowl and the stem onto the table, and a layer of chilled air sits in the rim above the drink. The air is part of the simulation: it is what carries the room's heat back to the glass, and its vapour is what condenses on it.</li>
   </ul>
 
   <h2>Setup</h2>
-  <p>A martini glass (3 mm wall) filled to 10 mm below the rim with a martini at room temperature, plus two 16 mm ice cubes at −18 °C. Room at 22 °C and 55 % relative humidity. In this 2D slice the ice is about 21 % of the drink, so think of a well-iced drink, more like three or four big cubes in a real glass. Ice in a martini glass is unusual, but it makes the physics much easier to see.</p>
+  <p>A martini glass (3 mm wall) filled to 10 mm below the rim with a martini at room temperature, plus two 22 mm ice cubes at −18 °C. Room at 22 °C and 55 % relative humidity. The picture is a 2D slice for viewing, but the heat transfer is scaled to a real 3D glass: per unit of drink, a cone has 1.5 times the surface of its slice, and a cube 1.5 times the surface of a square, so every exchange through a surface is scaled by that factor. A square in the slice stands for a cube that runs the full depth, so the ice is about 40 % of the drink, as much as about 4 cubes of 22 mm in a real glass: a well-iced drink. Ice in a martini glass is unusual, but it makes the physics much easier to see.</p>
 
   <h2>Stated limits</h2>
   <ul>
     <li>This is a 2D slice through the glass, so the mechanisms are right and the times are the right order of magnitude, but they're indicative rather than exact for a real 3D glass. The ice can only turn in the plane you're looking at.</li>
     <li>The surface is flat in the simulation: no waves. Its rise and fall is derived from the pressure under it and shown exaggerated. Waves from the drifting ice would be micrometres high, and the capsizing would make ripples of about a tenth of a millimetre.</li>
     <li>The ice melts at 0 °C; in reality ice in alcohol also dissolves slowly below 0 °C. The drink doesn't evaporate.</li>
-    <li>Flow is resolved on a 0.75 mm grid. Plumes, layering and the surface flows are captured; the finest eddies, the sharpest meltwater fronts and ice chips smaller than a few millimetres are not resolved in detail. On a finer grid the ice melts somewhat faster, so the melting times are good to about a minute or two.</li>
+    <li>Flow is resolved on a 0.5 mm grid. Plumes, layering and the surface flows are captured; the finest eddies, the sharpest meltwater fronts and ice chips smaller than a few millimetres are not resolved in detail. The melting times are good to within a few minutes.</li>
   </ul>
 </main>
 

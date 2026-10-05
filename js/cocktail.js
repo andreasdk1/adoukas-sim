@@ -559,7 +559,7 @@
       if (st.playing) {
         // playback pace in simulated seconds per second at 1×, whatever the frame spacing
         const f0_ = Math.min(NF - 2, Math.floor(st.pos)), tf = meta.frames[f0_].t;
-        const pace = tf < 1200 ? 24 : tf < 3600 ? 96 : 480;
+        const pace = tf < 1200 ? 24 : tf < 3600 ? 48 : tf < 5400 ? 96 : 480;   // slower while the ice lasts
         st.pos += dtw * st.speed * pace / Math.max(1e-6, meta.frames[f0_ + 1].t - tf);
         if (st.pos >= NF - 1) { st.pos = NF - 1; st.playing = false; el('ck-play').textContent = 'Replay'; }
       }
