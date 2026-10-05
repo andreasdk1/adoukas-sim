@@ -119,7 +119,15 @@
   <ul>
     <li>This is a 2D slice through the glass, so the mechanisms are right and the times are the right order of magnitude, but they're indicative rather than exact for a real 3D glass. The ice can only turn in the plane you're looking at.</li>
     <li>The surface is flat in the simulation: no waves. Its rise and fall is derived from the pressure under it and shown exaggerated. Waves from the drifting ice would be micrometres high, and the capsizing would make ripples of about a tenth of a millimetre.</li>
-    <li>The ice melts at 0 °C; in reality ice in alcohol also dissolves slowly below 0 °C. Evaporation from the drink isn't modelled. A separate estimate for a real glass shows it would change the volume by only 2–5 % over the 3.5 hours and doesn't affect the chilling and melting. It would matter later: 10–24 % of the alcohol would evaporate, and the evaporative cooling would keep the drink 2–4 °C below room temperature at the end, so the late warm-up times are optimistic.</li>
+    <li>The ice melts at 0 °C; in reality ice in alcohol also dissolves slowly below 0 °C.</li>
+    <li>Evaporation from the drink isn't simulated. A separate estimate for a real glass, using the drink temperature from this run, shows what it would change:
+      <ul>
+        <li>the volume would change by only 2–5 % over the 3.5 hours;</li>
+        <li>the chilling and melting aren't affected, and during the first hour water actually condenses onto the cold drink;</li>
+        <li>10–24 % of the alcohol would evaporate, mostly in the second half;</li>
+        <li>evaporative cooling would keep the drink 2–4 °C below room temperature at the end, so the late warm-up times are optimistic.</li>
+      </ul>
+    </li>
     <li>Flow is resolved on a 0.5 mm grid. Plumes, layering and the surface flows are captured; the finest eddies, the sharpest meltwater fronts and ice chips smaller than a few millimetres are not resolved in detail. The melting times are good to within a few minutes.</li>
   </ul>
 </main>

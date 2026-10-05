@@ -63,6 +63,8 @@
 .case-body ul { margin: 0 0 18px; }
 .case-body ul li { position: relative; padding: 0 0 12px 26px; color: var(--ink-2); }
 .case-body ul li::before { content: ""; position: absolute; left: 4px; top: .72em; width: 8px; height: 1px; background: var(--blue); }
+.case-body ul ul { margin: 10px 0 0; }
+.case-body ul ul li { padding-bottom: 6px; }
 
 .case-media { margin: 36px 0; }
 .case-media img, .case-media video {
