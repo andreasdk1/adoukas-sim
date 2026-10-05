@@ -67,6 +67,30 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && box.classList.contains('open')) close(); });
   }
 
+  // Contact form: send to Formspree in the background and thank the sender
+  // on the page instead of redirecting
+  const form = document.querySelector('.contact-form');
+  if (form && window.fetch) {
+    const status = form.querySelector('.form-status');
+    const btn = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const data = new FormData(form);
+      data.append('_subject', 'Website enquiry: ' + (data.get('subject') || 'general'));
+      btn.disabled = true; btn.textContent = 'Sending…';
+      status.className = 'form-status'; status.textContent = '';
+      try {
+        const r = await fetch(form.action, { method: 'POST', body: data, headers: { Accept: 'application/json' } });
+        if (!r.ok) throw new Error(r.status);
+        form.innerHTML = '<div class="form-done"><h3>Thank you, your message is on its way.</h3><p>I\'ll reply within 24 hours.</p></div>';
+      } catch (err) {
+        btn.disabled = false; btn.textContent = 'Send message';
+        status.className = 'form-status error';
+        status.textContent = 'The message could not be sent. Please try again in a moment.';
+      }
+    });
+  }
+
   const items = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver(entries => {

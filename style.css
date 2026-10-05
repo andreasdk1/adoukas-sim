@@ -346,6 +346,13 @@ h3 { font-size: 23px; line-height: 1.25; }
 }
 .form-foot { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
 .form-note { font-size: 12.5px; color: var(--on-night-2); }
+.contact-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.form-status:empty { display: none; }
+.form-status { font-size: 14px; color: var(--on-night-2); }
+.form-status.error { color: #f0a0a0; }
+.form-done { display: flex; flex-direction: column; justify-content: center; gap: 10px; min-height: 100%; }
+.form-done h3 { color: var(--on-night); font-weight: 500; }
+.form-done p { color: var(--on-night-2); }
 
 /* ---------- Footer ---------- */
 .footer { background: var(--hero-bg); color: var(--on-night-2); border-top: 1px solid var(--night-line); }
