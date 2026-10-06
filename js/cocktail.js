@@ -633,7 +633,9 @@
         if (fade <= 0) return;
         for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
           const a = ICEPX[iat(fr, nC, r, ib * nC + c)] / 255, o = (r * nC + c) * 4;
-          im.data[o] = 228; im.data[o + 1] = 240; im.data[o + 2] = 255; im.data[o + 3] = Math.min(255, a * 1.15 * 235) * fade;
+          // opaque from half ice: partly melted ice inside a piece (its top, slowly melted by the air) would
+          // otherwise let the drink/air edge behind it show through as a line at the drink's level
+          im.data[o] = 228; im.data[o + 1] = 240; im.data[o + 2] = 255; im.data[o + 3] = 255 * Math.min(1, Math.max(0, (a - 0.1) / 0.4)) * fade;
         }
         g.putImageData(im, 0, 0);
         const size = 2 * b.half * sc;
