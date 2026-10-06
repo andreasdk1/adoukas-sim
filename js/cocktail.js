@@ -384,7 +384,10 @@
         const N = Math.max(4, Math.ceil((x1 - x0) / 0.25)), xs = [], ys = [];
         for (let i = 0; i <= N; i++) {
           const x = x0 + (x1 - x0) * i / N;
-          ys.push(fy + h0 * Math.exp(-(x - x0) / lc) + h1 * Math.exp(-(x1 - x) / lc) + eta(x)); xs.push(x);
+          // the exaggerated flow height fades out within a capillary length of the ice and the glass,
+          // so the menisci meet them at their true height (the real height there is only tens of µm)
+          const s = Math.min(1, (x - x0) / lc, (x1 - x) / lc), tap = s * s * (3 - 2 * s);
+          ys.push(fy + h0 * Math.exp(-(x - x0) / lc) + h1 * Math.exp(-(x1 - x) / lc) + tap * eta(x)); xs.push(x);
         }
         // liquid above the flat line (menisci, bulges): fill with the colour beneath
         cx.save();
