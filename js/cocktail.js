@@ -123,8 +123,8 @@
                       EV: prolong(sg, ch.EV, base), WV: prolong(sg, ch.WV, base) };
         // values on the segment's own cells (8-bit scale), channel by channel; zero velocity is 127.5
         const vals = {};
-        for (const name of ['T', 'A', 'FS', 'U', 'V', 'AU', 'AV', 'EV', 'WV', 'FILM']) {
-          const a = new Float32Array(nc), C = ch[name], A_ = air[name];
+        for (const name of ['T', 'A', 'FS', 'U', 'V', 'AU', 'AV', 'EV', 'WV', 'FILM', 'RUN']) {
+          const a = new Float32Array(nc), C = name === 'RUN' ? ch.WV : ch[name], A_ = name === 'RUN' ? null : air[name];
           const zero = (name === 'U' || name === 'V' || name === 'AU' || name === 'AV' || name === 'WV') ? 127.5 : 0;
           for (let k = 0; k < nc; k++) {
             const si = sg.solidIdx[k];
@@ -133,13 +133,14 @@
           }
           vals[name] = a;
         }
-        const N = NX * NY, D = { F: new Uint8ClampedArray(N * 4), V: new Uint8ClampedArray(N * 4), VA: new Uint8ClampedArray(N * 4), VP: new Uint8ClampedArray(N * 4) };
+        const N = NX * NY, D = { F: new Uint8ClampedArray(N * 4), V: new Uint8ClampedArray(N * 4), VA: new Uint8ClampedArray(N * 4), VP: new Uint8ClampedArray(N * 4), RN: new Uint8ClampedArray(N) };
         const put = (dst, o, a, k) => { let v = 0; for (let q = 0; q < 4; q++) { const ks = sg.fsrc[k * 4 + q]; if (ks < 0) break; v += sg.fw[k * 4 + q] * a[ks]; } dst[o] = v; };
         for (let k = 0; k < N; k++) {
           const o = k * 4;
           put(D.F, o, vals.T, k); put(D.F, o + 1, vals.A, k); put(D.F, o + 2, vals.FS, k);
           put(D.V, o, vals.U, k); put(D.V, o + 1, vals.V, k); put(D.VA, o, vals.AU, k); put(D.VA, o + 1, vals.AV, k);
           put(D.VP, o, vals.EV, k); put(D.VP, o + 1, vals.WV, k); put(D.VP, o + 2, vals.FILM, k);
+          { const ks = sg.fsrc[k * 4]; D.RN[k] = ks >= 0 ? vals.RUN[ks] : 0; }   // running water: nearest cell, not blended
         }
         return D;
       };
@@ -170,7 +171,11 @@
     if (!VP) { el('ck-view-evap').style.display = 'none'; el('ck-evap-row').style.display = 'none'; }
     // water on the glass (µm of film, thickest in each cell), from runs that track the condensate
     const HAS_FILM = !!VP && meta.frames[0].film_ul !== undefined;
-    const FILMof = NSEG ? (f, k) => fr_(f).VP[k * 4 + 2] : (f, k) => VP[at(f, k) + 2];
+    // runs with the drop model carry the water on the glass on a square-root scale (µm) and the water
+    // running down it (mm³, log scale); older runs the film in µm directly
+    const FM = NSEG && meta.film ? meta.film : null;
+    const FILMof = NSEG ? (FM ? (f, k) => (fr_(f).VP[k * 4 + 2] / 255) ** 2 * FM.max_um : (f, k) => fr_(f).VP[k * 4 + 2]) : (f, k) => VP[at(f, k) + 2];
+    const RUNof = (f, k) => { const c = FM ? fr_(f).RN[k] : 0; return c ? 10 ** ((c - 1) / 254 * 5 - 4) : 0; };
 
     // ------------------------------------------------------------ view state
     const st = { pos: 0, playing: true, speed: 0.25, view: 'temp' };
@@ -455,8 +460,11 @@
         cx.fillStyle = '#0f1626'; cx.fillRect(0, H, W, HC - H);
         cx.fillStyle = 'rgba(169,192,234,0.28)'; cx.fillRect(0, H, W, 1);
       }
-      if (HAS_FILM) { const [g0, g1, gw] = frameAt(st.pos); drawMist(g0, g1, gw); drawPool(g0, g1, gw); }
-      drawDrops();
+      if (FM) { drawCondensate(f0, f1, w); drawPool(f0, f1, w); }
+      else {
+        if (HAS_FILM) { const [g0, g1, gw] = frameAt(st.pos); drawMist(g0, g1, gw); drawPool(g0, g1, gw); }
+        drawDrops();
+      }
     }
     // ------------------------------------------------------------ the liquid surface
     // Menisci from capillarity (to scale): the surface climbs the glass (contact angle ~30°)
@@ -660,10 +668,10 @@
     function glassPath() {
       const g = Gm, xo = (g.rim_y - g.apex_out) * tanA;
       cx.beginPath();
-      cx.moveTo(X(g.cx - xo), Y(g.rim_y)); cx.lineTo(X(g.cx - 3.2), Y(g.apex_out + 2.5));
+      cx.moveTo(X(g.cx - xo), Y(g.rim_y)); cx.lineTo(X(g.cx - 3.2), Y(g.apex_out + 3.2 / tanA));
       cx.lineTo(X(g.cx - 3.2), Y(FY + 7)); cx.quadraticCurveTo(X(g.cx - 5.5), Y(FY + 4.5), X(g.cx - 36), Y(FY + 4.5));
       cx.lineTo(X(g.cx - 36), Y(FY)); cx.lineTo(X(g.cx + 36), Y(FY)); cx.lineTo(X(g.cx + 36), Y(FY + 4.5));
-      cx.quadraticCurveTo(X(g.cx + 5.5), Y(FY + 4.5), X(g.cx + 3.2), Y(FY + 7)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 2.5));
+      cx.quadraticCurveTo(X(g.cx + 5.5), Y(FY + 4.5), X(g.cx + 3.2), Y(FY + 7)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 3.2 / tanA));
       cx.lineTo(X(g.cx + xo), Y(g.rim_y)); cx.closePath();
       cx.moveTo(X(g.cx - g.half_rim_in), Y(g.rim_y)); cx.lineTo(X(g.cx), Y(g.apex_in)); cx.lineTo(X(g.cx + g.half_rim_in), Y(g.rim_y)); cx.closePath();
     }
@@ -674,10 +682,10 @@
       // outer silhouette
       cx.strokeStyle = 'rgba(235,242,255,0.75)'; cx.lineWidth = 1.3;
       cx.beginPath();
-      cx.moveTo(X(g.cx - xo), Y(g.rim_y)); cx.lineTo(X(g.cx - 3.2), Y(g.apex_out + 2.5));
+      cx.moveTo(X(g.cx - xo), Y(g.rim_y)); cx.lineTo(X(g.cx - 3.2), Y(g.apex_out + 3.2 / tanA));
       cx.lineTo(X(g.cx - 3.2), Y(FY + 7)); cx.quadraticCurveTo(X(g.cx - 5.5), Y(FY + 4.5), X(g.cx - 36), Y(FY + 4.5));
       cx.lineTo(X(g.cx - 36), Y(FY)); cx.lineTo(X(g.cx + 36), Y(FY)); cx.lineTo(X(g.cx + 36), Y(FY + 4.5));
-      cx.quadraticCurveTo(X(g.cx + 5.5), Y(FY + 4.5), X(g.cx + 3.2), Y(FY + 7)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 2.5));
+      cx.quadraticCurveTo(X(g.cx + 5.5), Y(FY + 4.5), X(g.cx + 3.2), Y(FY + 7)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 3.2 / tanA));
       cx.lineTo(X(g.cx + xo), Y(g.rim_y)); cx.stroke();
       // inner surface and rim
       cx.strokeStyle = 'rgba(235,242,255,0.45)'; cx.lineWidth = 1;
@@ -711,6 +719,81 @@
         cx.closePath();
         cx.fillStyle = 'rgba(200,225,255,0.35)'; cx.fill();
         cx.strokeStyle = 'rgba(255,255,255,0.6)'; cx.lineWidth = 0.8; cx.stroke();
+      }
+    }
+    // ------------------------------------------------------- the water on the glass, as computed
+    // The run gives the water on each spot of the glass (h) and the water running down it. Standing
+    // drops (dropwise condensation: 0.01-0.7 mm, flat caps at ~30°) are far below a pixel: shown as a
+    // frost along the surface whose density follows h. Water the run sends down the glass is drawn as
+    // its drop (DROP_X larger) with a wet streak; on level tops, water beyond the largest drops a puddle.
+    const DROP_X = 5;                                                  // sliding drops drawn this much larger
+    function wallSamples(seg, side) {                                  // points along a wall: position, tangent, outward normal, into-glass dir
+      const out = [];
+      if (seg === 0) for (let s = 0; s <= LWALL; s += 1) {             // outer bowl
+        const y = Gm.rim_y - 2 - s * COSA, x = Gm.cx + side * (y - Gm.apex_out) * tanA;
+        out.push({ s, x, y, T: [side * SINA, COSA], N: [side * COSA, -SINA], sinb: COSA });
+      }
+      if (seg === 1) for (let s = 0; s <= STEM_TOP - STEM_BOT; s += 1)   // stem
+        out.push({ s, x: Gm.cx + side * STEM_X, y: STEM_TOP - s, T: [0, 1], N: [side, 0], sinb: 1 });
+      if (seg === 3) for (let y = Gm.fill_y + 1; y <= Gm.rim_y - 1; y += COSA)   // inside the bowl, above the drink
+        out.push({ s: y, x: Gm.cx + side * (y - Gm.apex_in) * tanA, y, T: [side * SINA, COSA], N: [-side * COSA, SINA], sinb: COSA });
+      if (seg === 2) for (let s = 0; s <= FOOT_X - 6; s += 1)          // top of the foot
+        out.push({ s, x: Gm.cx + side * (6 + s), y: FOOT_TOP, T: [side, 0], N: [0, 1], sinb: 0 });
+      return out;
+    }
+    function filmAt(p, f0, f1, w, F_) {                                // the largest value in the glass just behind p
+      // the water sits in the glass's surface cells, which step along a sloping wall: search the glass
+      // cells within ~1 mm of the point
+      let h = 0;
+      const c0 = Math.floor((p.x - p.N[0] * 0.3) / CELL), r0 = Math.floor((HMM - (p.y - p.N[1] * 0.3)) / CELL), n = Math.max(1, Math.round(0.8 / CELL));
+      for (let r = Math.max(0, r0 - n); r <= Math.min(NY - 1, r0 + n); r++)
+        for (let c = Math.max(0, c0 - n); c <= Math.min(NX - 1, c0 + n); c++) {
+          const k = r * NX + c;
+          if (mat[k] === 1) h = Math.max(h, F_(f0, k) * (1 - w) + F_(f1, k) * w);
+        }
+      return h;
+    }
+    function cap(p, u, r, alpha) {                                     // a drop of base radius r at u mm along the wall
+      const ct = Math.tan(FM.theta_deg[0] * Math.PI / 360);
+      const px_ = X(p.x + p.T[0] * u), py_ = Y(p.y + p.T[1] * u);
+      cx.save();
+      cx.transform(p.T[0], -p.T[1], p.N[0], -p.N[1], px_, py_);        // local u along the wall, v out of it
+      cx.beginPath(); cx.ellipse(0, 0, Math.max(0.5, r * sc), Math.max(0.35, r * ct * sc), 0, 0, Math.PI);
+      // water against the light glass: a slightly darker, bluer body with a bright rim (refraction)
+      cx.fillStyle = `rgba(90,140,210,${0.35 * alpha})`; cx.fill();
+      cx.strokeStyle = `rgba(245,250,255,${0.85 * alpha})`; cx.lineWidth = 0.7; cx.stroke();
+      if (r * sc > 2.5) { cx.beginPath(); cx.arc(-0.35 * r * sc, 0.5 * r * ct * sc, Math.max(0.4, 0.18 * r * sc), 0, Math.PI * 2); cx.fillStyle = `rgba(255,255,255,${0.7 * alpha})`; cx.fill(); }
+      cx.restore();
+    }
+    function drawCondensate(f0, f1, w) {
+      const CV = FM.c_v, [ , TA_, TR_] = FM.theta_deg.map(d => d * Math.PI / 180);
+      const rRun = sinb => Math.sqrt(2 * FM.sigma * (Math.cos(TR_) - Math.cos(TA_)) / (1000 * 9.81 * sinb * CV)) * 1000;
+      for (const side of [-1, 1]) for (const seg of [0, 1, 3, 2]) {
+        const pts = wallSamples(seg, side), rdep = seg === 2 ? FM.l_cap_mm : rRun(pts.length ? pts[0].sinb : 1);
+        let prev = null;
+        pts.forEach((p, i) => {
+          const h = filmAt(p, f0, f1, w, FILMof);                     // µm
+          // the fog: the drops (0.01-0.7 mm, below a pixel) as a frost along the surface, denser with
+          // the water the run puts there (faint at ~1 µm, white by ~30 µm)
+          if (prev && h > 0.2) {
+            const a = Math.min(0.75, 0.06 + 0.69 * Math.sqrt(Math.min(1, h / 30)));
+            cx.strokeStyle = `rgba(236,244,255,${a})`; cx.lineWidth = Math.max(1.5, 0.9 * sc); cx.lineCap = 'butt';
+            cx.beginPath(); cx.moveTo(X(prev.x + p.N[0] * 0.2), Y(prev.y + p.N[1] * 0.2)); cx.lineTo(X(p.x + p.N[0] * 0.2), Y(p.y + p.N[1] * 0.2)); cx.stroke();
+          }
+          prev = p;
+          if (seg === 2 && h / 1000 > CV * rdep / (4 * Math.PI)) {      // level top beyond its largest drops: a puddle
+            const d = Math.min(0.95, h / 1000);
+            cx.fillStyle = 'rgba(196,222,255,0.30)'; cx.fillRect(X(Math.min(p.x, p.x + side)), Y(p.y + d), sc, d * sc);
+          }
+          // water running down here (the simulation's): its drop, with a wet streak behind it
+          const run = filmAt(p, f0, f1, w, RUNof);
+          if (run > 1e-4) {
+            const r = Math.min(rdep, Math.cbrt(run / CV)) * DROP_X;
+            cx.strokeStyle = 'rgba(190,215,250,0.22)'; cx.lineWidth = Math.max(1, 1.4 * r * sc); cx.lineCap = 'round';
+            cx.beginPath(); cx.moveTo(X(p.x + p.N[0] * 0.2), Y(p.y + p.N[1] * 0.2)); cx.lineTo(X(p.x + p.T[0] * 4 + p.N[0] * 0.2), Y(p.y + p.T[1] * 4 + p.N[1] * 0.2)); cx.stroke();
+            cap(p, 0, r, 1);
+          }
+        });
       }
     }
     function drawMist(f0, f1, w) {
@@ -808,22 +891,39 @@
     }
     // small chart: drink temperature and ice remaining vs time
     function drawChart() {
+      // x: frame by frame, like the scrub bar (the frames are dense while the ice melts, so that stretch
+      // gets most of the width); marks at round times
       const w = chart.width / DPR, h = chart.height / DPR, pad = 6;
       chx.clearRect(0, 0, w, h);
-      const tEnd = meta.frames[NF - 1].t;
-      const xt = t => pad + (t / tEnd) * (w - 2 * pad);
+      const xf = f => pad + (f / (NF - 1)) * (w - 2 * pad);
       const yT = T => h - pad - ((T - TMIN) / (TMAX - TMIN)) * (h - 2 * pad);
       const yI = f => h - pad - f * (h - 2 * pad);
       chx.strokeStyle = 'rgba(169,192,234,0.15)'; chx.lineWidth = 1;
       chx.beginPath(); chx.moveTo(pad, yT(TDEW)); chx.lineTo(w - pad, yT(TDEW)); chx.stroke();
+      chx.font = '9px ui-monospace, monospace'; chx.fillStyle = 'rgba(169,192,234,0.55)'; chx.textAlign = 'center';
+      let lastX = -1e9;
+      for (const tm of [60, 120, 300, 600, 900, 1800, 2700, 3600, 5400, 7200, 10800]) {
+        const fm = timeToPos(tm); if (fm == null) continue;
+        const x = xf(fm); if (x - lastX < 26) continue; lastX = x;
+        chx.strokeStyle = 'rgba(169,192,234,0.12)'; chx.beginPath(); chx.moveTo(x, pad); chx.lineTo(x, h - pad - 9); chx.stroke();
+        chx.fillText(tm < 3600 ? `${tm / 60}′` : `${tm / 3600}h`, x, h - 2);
+      }
+      chx.textAlign = 'start';
       chx.lineWidth = 1.6;
       chx.strokeStyle = '#e9c46a'; chx.beginPath();
-      meta.frames.forEach((fr, f) => (f ? chx.lineTo(xt(fr.t), yT(fr.T_drink)) : chx.moveTo(xt(fr.t), yT(fr.T_drink)))); chx.stroke();
+      meta.frames.forEach((fr, f) => (f ? chx.lineTo(xf(f), yT(fr.T_drink)) : chx.moveTo(xf(f), yT(fr.T_drink)))); chx.stroke();
       chx.strokeStyle = '#a9d8ff'; chx.beginPath();
-      meta.frames.forEach((fr, f) => (f ? chx.lineTo(xt(fr.t), yI(fr.ice)) : chx.moveTo(xt(fr.t), yI(fr.ice)))); chx.stroke();
-      const xc = xt(lerpStat('t'));
+      meta.frames.forEach((fr, f) => (f ? chx.lineTo(xf(f), yI(fr.ice)) : chx.moveTo(xf(f), yI(fr.ice)))); chx.stroke();
+      const xc = xf(st.pos);
       chx.strokeStyle = 'rgba(255,255,255,0.8)'; chx.lineWidth = 1;
       chx.beginPath(); chx.moveTo(xc, pad); chx.lineTo(xc, h - pad); chx.stroke();
+    }
+    function timeToPos(t) {                                            // fractional frame at time t (s)
+      if (t > meta.frames[NF - 1].t) return null;
+      let lo = 0, hi = NF - 1;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (meta.frames[m].t <= t) lo = m; else hi = m; }
+      const t0 = meta.frames[lo].t, t1 = meta.frames[hi].t;
+      return lo + (t1 > t0 ? Math.max(0, Math.min(1, (t - t0) / (t1 - t0))) : 0);
     }
 
     // ---------------------------------------------------------------- loop
@@ -839,8 +939,9 @@
       }
       const [f0, f1, w] = frameAt(st.pos);
 
-      updateDrops(f0, f1, w, dtw);
-      draw(); drawParticles(f0, f1, w); readouts(); drawChart();
+      if (!FM) updateDrops(f0, f1, w, dtw);
+      draw(); drawParticles(f0, f1, w);
+      readouts(); drawChart();
       if (running) raf = requestAnimationFrame(frame);
     }
     function start() { if (!running) { running = true; last = performance.now(); raf = requestAnimationFrame(frame); } }
@@ -849,14 +950,10 @@
     // ------------------------------------------------------------ controls
     const scrub = el('ck-scrub'); scrub.max = NF - 1; scrub.step = 0.01;
     scrub.addEventListener('input', () => { st.pos = +scrub.value; if (st.pos < NF - 1) el('ck-play').textContent = st.playing ? 'Pause' : 'Play'; });
-    // click or drag on the chart: go to that time (the chart's axis is linear in time, the frames are not)
+    // click or drag on the chart: go to that point (same axis as the scrub bar)
     function chartSeek(e) {
-      const r = chart.getBoundingClientRect(), pad = 6, tEnd = meta.frames[NF - 1].t;
-      const t = Math.max(0, Math.min(1, (e.clientX - r.left - pad) / (r.width - 2 * pad))) * tEnd;
-      let lo = 0, hi = NF - 1;
-      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (meta.frames[m].t <= t) lo = m; else hi = m; }
-      const t0 = meta.frames[lo].t, t1 = meta.frames[hi].t;
-      st.pos = Math.min(NF - 1, lo + (t1 > t0 ? Math.max(0, Math.min(1, (t - t0) / (t1 - t0))) : 0));
+      const r = chart.getBoundingClientRect(), pad = 6;
+      st.pos = Math.max(0, Math.min(1, (e.clientX - r.left - pad) / (r.width - 2 * pad))) * (NF - 1);
       if (st.pos < NF - 1) el('ck-play').textContent = st.playing ? 'Pause' : 'Play';
     }
     chart.addEventListener('pointerdown', e => { chart.setPointerCapture(e.pointerId); chartSeek(e); });
