@@ -431,13 +431,21 @@
         cx.beginPath(); cx.moveTo(X(xStart), Y(fy));
         for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.max(ys[i], fy)));
         cx.lineTo(X(xEnd), Y(fy)); cx.closePath();
-        const cm = Math.min(NX - 1, Math.max(0, Math.round((x0 + x1) / 2 / CELL)));
-        const k = Math.max(0, topRow[cm]) * NX + cm, o = k * 4;
-        cx.fillStyle = `rgb(${d[o]},${d[o + 1]},${d[o + 2]})`; cx.fill();
-        // dips below the flat line: show the air just above the drink there (clearing the canvas
-        // instead would expose the page background as a dark band)
-        const ka = Math.max(0, topRow[cm] - 1) * NX + cm, oa = ka * 4;
-        cx.fillStyle = `rgb(${d[oa]},${d[oa + 1]},${d[oa + 2]})`;
+        // the colour follows the drink right beneath, column by column, so a meniscus is the same
+        // liquid as the rest of the surface layer (dips below the line: the air just above, likewise)
+        const grad = (dr) => {
+          const gr = cx.createLinearGradient(X(xStart), 0, X(xEnd), 0), span = Math.max(1e-6, xEnd - xStart);
+          let any = false;
+          for (let c = Math.max(0, Math.floor(xStart / CELL)); c <= Math.min(NX - 1, Math.floor(xEnd / CELL)); c++) {
+            if (topRow[c] < 0) continue;
+            const o = (Math.max(0, topRow[c] + dr) * NX + c) * 4, t = Math.min(1, Math.max(0, ((c + 0.5) * CELL - xStart) / span));
+            gr.addColorStop(t, `rgb(${d[o]},${d[o + 1]},${d[o + 2]})`); any = true;
+          }
+          if (!any) { const cm = Math.min(NX - 1, Math.max(0, Math.round((x0 + x1) / 2 / CELL))), o = (Math.max(0, topRow[cm] + dr) * NX + cm) * 4; return `rgb(${d[o]},${d[o + 1]},${d[o + 2]})`; }
+          return gr;
+        };
+        cx.fillStyle = grad(0); cx.fill();
+        cx.fillStyle = grad(-1);
         cx.beginPath(); cx.moveTo(X(xs[0]), Y(fy));
         for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.min(ys[i], fy)));
         cx.lineTo(X(xs[N]), Y(fy)); cx.closePath(); cx.fill();
