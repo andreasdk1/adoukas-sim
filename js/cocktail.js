@@ -30,7 +30,7 @@
   // between restarts (grid switch, level steps) has its own mesh. Frames are decoded on demand onto the
   // finest grid of the run: the air is rebuilt with the solver's own interpolation between the leaves.
   // the frames' values, channel by channel (frame g, entry i at g * L + i), from an atlas of n blocks
-  function takeFrames(img, chans, n, L, bw, bh, cols) {
+  function takeFrames(img, chans, n, L, bw, bh, cols, delta) {
     const px = pixels(img), AW = img.width, out = chans.map(() => new Uint8Array(n * L));
     for (let g = 0; g < n; g++) {
       const r0 = ((g / cols) | 0) * bh, c0 = (g % cols) * bw;
@@ -39,7 +39,19 @@
         for (let q = 0; q < chans.length; q++) out[q][g * L + i] = px[o + chans[q]];
       }
     }
+    // repacked runs: frames after a chunk's first are the change from the frame before (mod 256)
+    if (delta) for (const a of out) for (let k = L; k < n * L; k++) a[k] = (a[k] + a[k - L]) & 255;
     return out;
+  }
+  // the same for a whole atlas in place (the ice): block g += block g - 1
+  function undelta(px, AW, h, w, n, cols) {
+    for (let g = 1; g < n; g++) {
+      const r0 = ((g / cols) | 0) * h, c0 = (g % cols) * w, r1 = (((g - 1) / cols) | 0) * h, c1 = ((g - 1) % cols) * w;
+      for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+        const o = ((r0 + r) * AW + c0 + c) * 4, p_ = ((r1 + r) * AW + c1 + c) * 4;
+        for (let q = 0; q < 3; q++) px[o + q] = (px[o + q] + px[p_ + q]) & 255;
+      }
+    }
   }
   const chanSet = imgs => {
     const [T, A, FS] = imgs[0], [U, V] = imgs[1], [AU, AV] = imgs[2], [EV, WV, FILM, PEAK] = imgs[3];
@@ -86,10 +98,11 @@
         const { sg, n, key, pre, fl, f0 } = W_;
         if (held.has(key)) { const c = held.get(key); held.delete(key); held.set(key, c); return c.p; }
         const c = { ready: false };
-        c.p = Promise.all([...['fields', 'vel', 'vela', 'vap', 'ice'].map(nm => loadImg(`${pre}_${nm}.png`)), fetch(pre + '.json').then(r => r.json())])
+        c.p = Promise.all([...['fields', 'vel', 'vela', 'vap', 'ice'].map(nm => loadImg(`${pre}_${nm}.${NM.ext || 'png'}`)), fetch(pre + '.json').then(r => r.json())])
           .then(([fI, vI, aI, pI, iI, st_]) => {
-            c.ch = chanSet([[fI, [0, 1, 2]], [vI, [0, 1]], [aI, [0, 1]], [pI, [0, 1, 2, 3]]].map(([im, chs]) => takeFrames(im, chs, n, sg.L, sg.bw, sg.bh, CC)));
+            c.ch = chanSet([[fI, [0, 1, 2]], [vI, [0, 1]], [aI, [0, 1]], [pI, [0, 1, 2, 3]]].map(([im, chs]) => takeFrames(im, chs, n, sg.L, sg.bw, sg.bh, CC, NM.delta)));
             c.ice = pixels(iI); c.iceW = iI.width / CC;
+            if (NM.delta) undelta(c.ice, iI.width, iI.height / Math.ceil(n / CC), c.iceW, n, CC);
             st_.forEach((x, i) => Object.assign(meta.frames[fl ? fl[f0 + i] : f0 + i], x));
             c.ready = true;
           }).catch(e => { held.delete(key); console.error(e); });
@@ -98,10 +111,15 @@
         return c.p;
       };
       // a frame's data from whichever loaded chunk has it (the full stream first)
+      // (asked per cell by the ice drawing: the last two answers are kept)
+      let gA = -1, rA = null, gB = -1, rB = null;
       const get = f => {
+        if (f === gA && rA) return rA;
+        if (f === gB && rB) return rB;
         for (let L = 0; L < LODS.length; L++) {
           const W_ = where(f, L); if (!W_) continue;
-          const c = held.get(W_.key); if (c && c.ready) return { c, g: W_.g, sg: W_.sg };
+          const c = held.get(W_.key);
+          if (c && c.ready) { const r = { c, g: W_.g, sg: W_.sg }; gB = gA; rB = rA; gA = f; rA = r; return r; }
         }
         return null;
       };
@@ -184,7 +202,7 @@
         // values on the segment's own cells (8-bit scale), channel by channel; zero velocity is 127.5
         const vals = {};
         for (const name of ['T', 'A', 'FS', 'U', 'V', 'AU', 'AV', 'EV', 'WV', 'FILM', 'RUN', 'PEAK']) {
-          const a = new Float32Array(nc), C = name === 'RUN' ? ch.WV : name === 'PEAK' && !(meta.film && meta.film.peak) ? ch.FILM : ch[name], A_ = name === 'RUN' || name === 'PEAK' ? null : air[name];
+          const a = new Float32Array(nc), C = name === 'RUN' ? ch.WV : name === 'PEAK' ? (!(meta.film && meta.film.peak) ? ch.FILM : meta.film.peak.startsWith('vap red') ? ch.EV : ch.PEAK) : ch[name], A_ = name === 'RUN' || name === 'PEAK' ? null : air[name];
           const zero = (name === 'U' || name === 'V' || name === 'AU' || name === 'AV' || name === 'WV') ? 127.5 : 0;
           for (let k = 0; k < nc; k++) {
             const si = sg.solidIdx[k];
@@ -427,16 +445,19 @@
     // ------------------------------------------------------------ render
     // the two frames around pos and the weight between them; when playing from a thinned copy (LV > 0),
     // its frames around pos
-    let LV = 0;
+    // (at high speed only every LK-th frame of the copy: unpacking a frame of the fine grid takes ~25 ms)
+    let LV = 0, LK = 1;
     function frameAt(pos) {
       pos = Math.max(0, pos);
       const LD = LV && NSEG.stream.LODS[LV];
       if (LD) {
-        const a = LD.all; let lo = 0, hi = a.length - 1;
+        const a = LD.all, n = Math.floor((a.length - 1) / LK);
+        let lo = 0, hi = n;
         if (pos <= a[0]) return [a[0], a[0], 0];
-        if (pos >= a[hi]) return [a[hi], a[hi], 0];
-        while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a[m] <= pos) lo = m; else hi = m; }
-        return [a[lo], a[hi], (pos - a[lo]) / (a[hi] - a[lo])];
+        if (pos >= a[n * LK]) return [a[n * LK], a[n * LK], 0];
+        while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a[m * LK] <= pos) lo = m; else hi = m; }
+        const f0 = a[lo * LK], f1 = a[hi * LK];
+        return [f0, f1, (pos - f0) / (f1 - f0)];
       }
       const f0 = Math.min(NF - 1, Math.floor(pos)); return [f0, Math.min(NF - 1, f0 + 1), pos - f0];
     }
@@ -1040,6 +1061,7 @@
           LV = 0;
           for (let L = 1; L < SM.LODS.length; L++)
             if (st.speed * pace / Math.max(gap, LV ? SM.LODS[LV].step : gap) > 40 && SM.LODS[L].step > gap) LV = L;
+          LK = LV ? Math.max(1, Math.ceil(st.speed * pace / (SM.LODS[LV].step * 15))) : 1;
         }
         const next = Math.min(NF - 1, st.pos + dtw * st.speed * pace / gap);
         if (!SM || have(next)) st.pos = next;                            // streamed: wait for the data
@@ -1050,7 +1072,7 @@
         // the chunks here and the next two ahead (of the copy playing); until this frame's data is in,
         // keep the last picture
         SM.load(f0, LV); SM.load(f1, LV);
-        if (LV) { const a = SM.LODS[LV].all, i = a.indexOf(f1); SM.load(a[Math.min(a.length - 1, i + SM.CHK)], LV); SM.load(a[Math.min(a.length - 1, i + 2 * SM.CHK)], LV); }
+        if (LV) { const a = SM.LODS[LV].all, i = a.indexOf(f1); SM.load(a[Math.min(a.length - 1, i + SM.CHK)], LV); SM.load(a[Math.min(a.length - 1, i + 2 * SM.CHK)], LV); SM.load(a[Math.min(a.length - 1, i + 3 * SM.CHK)], LV); }
         else { SM.load(f1 + SM.CHK); SM.load(f1 + 2 * SM.CHK); }
         const ok = have(st.pos); el('ck-buffer').hidden = ok;
         if (!ok) { drawChart(); if (running) raf = requestAnimationFrame(frame); return; }
