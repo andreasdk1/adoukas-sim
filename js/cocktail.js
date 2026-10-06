@@ -764,9 +764,8 @@
     // drops (dropwise condensation: 0.01-0.7 mm, flat caps at ~30°) are far below a pixel: drawn
     // BEAD_X larger and steeper, their size from h (Rose's largest drop), each in a fixed place; a drop
     // that would touch a larger one has merged into it. Water the run sends down the glass is drawn as
-    // its drop (DROP_X larger) with a wet streak; on level tops, water beyond the largest drops a puddle.
+    // its drop (BEAD_X larger) with a wet track; on level tops, water beyond the largest drops a puddle.
     const BEAD_X = 2.5, BEAD_TH = 60 * Math.PI / 180;   // indicative drops: size from the water, steeper caps than the real 30° to be seen
-    const DROP_X = 5;                                                  // sliding drops drawn this much larger
     function wallSamples(seg, side) {                                  // points along a wall: position, tangent, outward normal, into-glass dir
       const out = [];
       if (seg === 0) for (let s = 0; s <= LWALL; s += 1) {             // outer bowl
@@ -793,24 +792,20 @@
         }
       return h;
     }
-    function cap(p, u, r, alpha) {                                     // a drop of base radius r at u mm along the wall
-      const ct = Math.tan(FM.theta_deg[0] * Math.PI / 360);
-      const px_ = X(p.x + p.T[0] * u), py_ = Y(p.y + p.T[1] * u);
-      cx.save();
-      cx.transform(p.T[0], -p.T[1], p.N[0], -p.N[1], px_, py_);        // local u along the wall, v out of it
-      cx.beginPath(); cx.ellipse(0, 0, Math.max(0.5, r * sc), Math.max(0.35, r * ct * sc), 0, 0, Math.PI);
-      // water against the light glass: a slightly darker, bluer body with a bright rim (refraction)
-      cx.fillStyle = `rgba(90,140,210,${0.35 * alpha})`; cx.fill();
-      cx.strokeStyle = `rgba(245,250,255,${0.85 * alpha})`; cx.lineWidth = 0.7; cx.stroke();
-      if (r * sc > 2.5) { cx.beginPath(); cx.arc(-0.35 * r * sc, 0.5 * r * ct * sc, Math.max(0.4, 0.18 * r * sc), 0, Math.PI * 2); cx.fillStyle = `rgba(255,255,255,${0.7 * alpha})`; cx.fill(); }
-      cx.restore();
+    function bead(p, d, r) {                                           // a drop of base radius r, d mm along the wall from p
+      // a cap whose base lies on the glass: sphere of radius r / sin(th) centred inside the glass
+      const sx = p.x + p.T[0] * d, sy = p.y + p.T[1] * d, Rs = r / Math.sin(BEAD_TH), c0 = Rs * Math.cos(BEAD_TH);
+      const ox = X(sx - p.N[0] * c0), oy = Y(sy - p.N[1] * c0), base = Math.atan2(-p.N[1], p.N[0]);
+      cx.beginPath(); cx.arc(ox, oy, Rs * sc, base - BEAD_TH, base + BEAD_TH); cx.closePath();
+      cx.fillStyle = 'rgba(205,228,255,0.35)'; cx.fill();
+      cx.strokeStyle = 'rgba(245,250,255,0.9)'; cx.lineWidth = 0.9; cx.stroke();
     }
     function drawCondensate(f0, f1, w) {
       const CV = FM.c_v, [ , TA_, TR_] = FM.theta_deg.map(d => d * Math.PI / 180);
       const rRun = sinb => Math.sqrt(2 * FM.sigma * (Math.cos(TR_) - Math.cos(TA_)) / (1000 * 9.81 * sinb * CV)) * 1000;
       for (const side of [-1, 1]) for (const seg of [0, 1, 3, 2]) {
         const pts = wallSamples(seg, side), rdep = seg === 2 ? FM.l_cap_mm : rRun(pts.length ? pts[0].sinb : 1);
-        let prev = null; const beads = [];
+        let prev = null; const beads = [], runners = [];
         pts.forEach((p, i) => {
           const h = filmAt(p, f0, f1, w, FILMof);                     // µm
           // which drops there are and which have merged follows the most water this spot has held; as it
@@ -829,13 +824,10 @@
             cx.fillStyle = 'rgba(196,222,255,0.30)'; cx.fillRect(X(Math.min(p.x, p.x + side)), Y(p.y + d), sc, d * sc);
           }
           // water running down here (the simulation's): its drop, with a wet streak behind it
-          const run = filmAt(p, f0, f1, w, RUNof);
-          if (run > 1e-4) {
-            const r = Math.min(rdep, Math.cbrt(run / CV)) * DROP_X;
-            cx.strokeStyle = 'rgba(190,215,250,0.22)'; cx.lineWidth = Math.max(1, 1.4 * r * sc); cx.lineCap = 'round';
-            cx.beginPath(); cx.moveTo(X(p.x + p.N[0] * 0.2), Y(p.y + p.N[1] * 0.2)); cx.lineTo(X(p.x + p.T[0] * 4 + p.N[0] * 0.2), Y(p.y + p.T[1] * 4 + p.N[1] * 0.2)); cx.stroke();
-            cap(p, 0, r, 1);
-          }
+          // (the run moves a drop one cell per step: between frames it jumps, so it is shown where the
+          // nearer frame has it, not blended)
+          const fn = w < 0.5 ? f0 : f1, run = filmAt(p, fn, fn, 0, RUNof);
+          if (run > 1e-4) runners.push([p, Math.min(1.8, Math.cbrt(run / CV) * BEAD_X)]);
         });
         {
           // coalescence: drops that touch become one, with their volume (r³ adds), at their centre of
@@ -856,14 +848,12 @@
             dr = out;
           }
           const placed = dr.map(([u, r, , sh]) => [u, r * sh, pts[Math.max(0, Math.min(pts.length - 1, Math.round(u)))]]);
-          for (const [u, r, p] of placed) {
-            // a cap whose base lies on the glass: sphere of radius r / sin(th) centred inside the glass
-            const d = u - Math.round(u), sx = p.x + p.T[0] * d, sy = p.y + p.T[1] * d;
-            const Rs = r / Math.sin(BEAD_TH), c0 = Rs * Math.cos(BEAD_TH);
-            const ox = X(sx - p.N[0] * c0), oy = Y(sy - p.N[1] * c0), base = Math.atan2(-p.N[1], p.N[0]);
-            cx.beginPath(); cx.arc(ox, oy, Rs * sc, base - BEAD_TH, base + BEAD_TH); cx.closePath();
-            cx.fillStyle = 'rgba(205,228,255,0.35)'; cx.fill();
-            cx.strokeStyle = 'rgba(245,250,255,0.9)'; cx.lineWidth = 0.9; cx.stroke();
+          for (const [u, r, p] of placed) bead(p, u - Math.round(u), r);
+          // sliding drops: the largest drop of the cells it covers, a faint wet track up the glass behind it
+          for (const [p, r] of runners) {
+            cx.strokeStyle = 'rgba(205,228,255,0.18)'; cx.lineWidth = Math.max(1, 0.8 * r * sc); cx.lineCap = 'round';
+            cx.beginPath(); cx.moveTo(X(p.x), Y(p.y)); cx.lineTo(X(p.x + p.T[0] * 5), Y(p.y + p.T[1] * 5)); cx.stroke();
+            bead(p, 0, r);
           }
         }
       }
