@@ -62,27 +62,50 @@
     // streamed runs: the frames come in chunks of NM.chunk, loaded around where the player is
     // (with their stats); a handful are kept
     const stream = STREAMED ? (() => {
-      const CHK = NM.chunk, CC = NM.chunk_cols, held = new Map(), MAXHELD = 12;
-      const where = f => { const sg = segs.find(s_ => f >= s_.first && f < s_.first + s_.n) || segs[segs.length - 1];
-                           const j = Math.floor((f - sg.first) / CHK); return { sg, j, g: f - sg.first - j * CHK, key: sg.seg + ':' + j }; };
-      const load = f => {
+      const CHK = NM.chunk, CC = NM.chunk_cols, held = new Map(), MAXHELD = 16;
+      // thinned copies for fast playback (make_lod.py): level L holds the frames on whole steps
+      const LODS = [null, ...(NM.lod || []).map(l => {
+        const all = [], pos = new Map();
+        l.segments.forEach(s_ => s_.frames.forEach((f, i) => { all.push(f); pos.set(f, [s_.seg, i, s_.frames]); }));
+        return { level: l.level, step: l.step, all, pos };
+      })];
+      const where = (f, L) => {
+        if (L) {
+          const e = LODS[L].pos.get(f); if (!e) return null;
+          const sg = segs.find(s_ => s_.seg === e[0]), j = Math.floor(e[1] / CHK);
+          return { sg, j, g: e[1] - j * CHK, n: Math.min(CHK, e[2].length - j * CHK), key: `${L}:${sg.seg}:${j}`, pre: NB + `seg${sg.seg}_l${L}_c${j}`, fl: e[2], f0: j * CHK };
+        }
+        const sg = segs.find(s_ => f >= s_.first && f < s_.first + s_.n) || segs[segs.length - 1];
+        const j = Math.floor((f - sg.first) / CHK);
+        const n = Math.min(CHK, sg.n - j * CHK);
+        return { sg, j, g: f - sg.first - j * CHK, n, key: `0:${sg.seg}:${j}`, pre: NB + `seg${sg.seg}_c${j}`, fl: null, f0: sg.first + j * CHK };
+      };
+      const load = (f, L = 0) => {
         if (f < 0 || f >= meta.frames.length) return null;
-        const { sg, j, key } = where(f);
+        const W_ = where(f, L); if (!W_) return null;
+        const { sg, n, key, pre, fl, f0 } = W_;
         if (held.has(key)) { const c = held.get(key); held.delete(key); held.set(key, c); return c.p; }
-        const n = Math.min(CHK, sg.n - j * CHK), pre = NB + `seg${sg.seg}_c${j}`, c = { ready: false };
+        const c = { ready: false };
         c.p = Promise.all([...['fields', 'vel', 'vela', 'vap', 'ice'].map(nm => loadImg(`${pre}_${nm}.png`)), fetch(pre + '.json').then(r => r.json())])
           .then(([fI, vI, aI, pI, iI, st_]) => {
             c.ch = chanSet([[fI, [0, 1, 2]], [vI, [0, 1]], [aI, [0, 1]], [pI, [0, 1, 2, 3]]].map(([im, chs]) => takeFrames(im, chs, n, sg.L, sg.bw, sg.bh, CC)));
             c.ice = pixels(iI); c.iceW = iI.width / CC;
-            st_.forEach((x, i) => Object.assign(meta.frames[sg.first + j * CHK + i], x));
+            st_.forEach((x, i) => Object.assign(meta.frames[fl ? fl[f0 + i] : f0 + i], x));
             c.ready = true;
           }).catch(e => { held.delete(key); console.error(e); });
         held.set(key, c);
         while (held.size > MAXHELD) held.delete(held.keys().next().value);
         return c.p;
       };
-      const get = f => { const w_ = where(f), c = held.get(w_.key); return c && c.ready ? { c, g: w_.g, sg: w_.sg } : null; };
-      return { load, get, ready: f => !!get(f), CHK, CC };
+      // a frame's data from whichever loaded chunk has it (the full stream first)
+      const get = f => {
+        for (let L = 0; L < LODS.length; L++) {
+          const W_ = where(f, L); if (!W_) continue;
+          const c = held.get(W_.key); if (c && c.ready) return { c, g: W_.g, sg: W_.sg };
+        }
+        return null;
+      };
+      return { load, get, ready: f => !!get(f), CHK, CC, LODS };
     })() : null;
     let iImg = null;
     if (stream) await stream.load(0); else iImg = await loadImg(NB + 'ice.png');
@@ -402,7 +425,21 @@
     });
 
     // ------------------------------------------------------------ render
-    function frameAt(pos) { pos = Math.max(0, pos); const f0 = Math.min(NF - 1, Math.floor(pos)); return [f0, Math.min(NF - 1, f0 + 1), pos - f0]; }
+    // the two frames around pos and the weight between them; when playing from a thinned copy (LV > 0),
+    // its frames around pos
+    let LV = 0;
+    function frameAt(pos) {
+      pos = Math.max(0, pos);
+      const LD = LV && NSEG.stream.LODS[LV];
+      if (LD) {
+        const a = LD.all; let lo = 0, hi = a.length - 1;
+        if (pos <= a[0]) return [a[0], a[0], 0];
+        if (pos >= a[hi]) return [a[hi], a[hi], 0];
+        while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a[m] <= pos) lo = m; else hi = m; }
+        return [a[lo], a[hi], (pos - a[lo]) / (a[hi] - a[lo])];
+      }
+      const f0 = Math.min(NF - 1, Math.floor(pos)); return [f0, Math.min(NF - 1, f0 + 1), pos - f0];
+    }
     function draw() {
       const [f0, f1, w] = frameAt(st.pos);
       if (NSEG) {                                        // the mesh of the nearer frame's segment
@@ -992,19 +1029,29 @@
     let last = performance.now(), running = false, raf = 0, onScreen = true;
     function frame(now) {
       const dtw = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;   // rAF time can precede start()
-      const SM = NSEG && NSEG.stream, have = p_ => { const a = Math.min(NF - 1, Math.floor(p_)); return SM.ready(a) && SM.ready(Math.min(NF - 1, a + 1)); };
+      const SM = NSEG && NSEG.stream;
+      const have = p_ => { const [a, b] = frameAt(p_); return SM.ready(a) && SM.ready(b); };
       if (st.playing) {
         // playback pace in simulated seconds per second at 1×, whatever the frame spacing
-        const f0_ = Math.min(NF - 2, Math.floor(st.pos)), tf = meta.frames[f0_].t;
+        const f0_ = Math.min(NF - 2, Math.floor(st.pos)), tf = meta.frames[f0_].t, gap = Math.max(1e-6, meta.frames[f0_ + 1].t - tf);
         const pace = tf < 1200 ? 24 : tf < 3600 ? 48 : tf < 5400 ? 96 : 480;   // slower while the ice lasts
-        const next = Math.min(NF - 1, st.pos + dtw * st.speed * pace / Math.max(1e-6, meta.frames[f0_ + 1].t - tf));
+        if (SM) {
+          // more frames a second than can be shown: play from the thinnest copy that keeps it to ~40
+          LV = 0;
+          for (let L = 1; L < SM.LODS.length; L++)
+            if (st.speed * pace / Math.max(gap, LV ? SM.LODS[LV].step : gap) > 40 && SM.LODS[L].step > gap) LV = L;
+        }
+        const next = Math.min(NF - 1, st.pos + dtw * st.speed * pace / gap);
         if (!SM || have(next)) st.pos = next;                            // streamed: wait for the data
         if (st.pos >= NF - 1) { st.pos = NF - 1; st.playing = false; el('ck-play').textContent = 'Replay'; }
-      }
+      } else if (SM) LV = 0;                                             // paused: every frame
       const [f0, f1, w] = frameAt(st.pos);
       if (SM) {
-        // the chunks here and the next two ahead; until this frame's data is in, keep the last picture
-        SM.load(f0); SM.load(f1); SM.load(f1 + SM.CHK); SM.load(f1 + 2 * SM.CHK);
+        // the chunks here and the next two ahead (of the copy playing); until this frame's data is in,
+        // keep the last picture
+        SM.load(f0, LV); SM.load(f1, LV);
+        if (LV) { const a = SM.LODS[LV].all, i = a.indexOf(f1); SM.load(a[Math.min(a.length - 1, i + SM.CHK)], LV); SM.load(a[Math.min(a.length - 1, i + 2 * SM.CHK)], LV); }
+        else { SM.load(f1 + SM.CHK); SM.load(f1 + 2 * SM.CHK); }
         const ok = have(st.pos); el('ck-buffer').hidden = ok;
         if (!ok) { drawChart(); if (running) raf = requestAnimationFrame(frame); return; }
       }
