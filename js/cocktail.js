@@ -723,9 +723,11 @@
     }
     // ------------------------------------------------------- the water on the glass, as computed
     // The run gives the water on each spot of the glass (h) and the water running down it. Standing
-    // drops (dropwise condensation: 0.01-0.7 mm, flat caps at ~30°) are far below a pixel: shown as a
-    // frost along the surface whose density follows h. Water the run sends down the glass is drawn as
+    // drops (dropwise condensation: 0.01-0.7 mm, flat caps at ~30°) are far below a pixel: drawn
+    // BEAD_X larger and steeper, their size from h (Rose's largest drop), each in a fixed place; a drop
+    // that would touch a larger one has merged into it. Water the run sends down the glass is drawn as
     // its drop (DROP_X larger) with a wet streak; on level tops, water beyond the largest drops a puddle.
+    const BEAD_X = 2.5, BEAD_TH = 60 * Math.PI / 180;   // indicative drops: size from the water, steeper caps than the real 30° to be seen
     const DROP_X = 5;                                                  // sliding drops drawn this much larger
     function wallSamples(seg, side) {                                  // points along a wall: position, tangent, outward normal, into-glass dir
       const out = [];
@@ -770,15 +772,15 @@
       const rRun = sinb => Math.sqrt(2 * FM.sigma * (Math.cos(TR_) - Math.cos(TA_)) / (1000 * 9.81 * sinb * CV)) * 1000;
       for (const side of [-1, 1]) for (const seg of [0, 1, 3, 2]) {
         const pts = wallSamples(seg, side), rdep = seg === 2 ? FM.l_cap_mm : rRun(pts.length ? pts[0].sinb : 1);
-        let prev = null;
+        let prev = null; const beads = [];
         pts.forEach((p, i) => {
           const h = filmAt(p, f0, f1, w, FILMof);                     // µm
-          // the fog: the drops (0.01-0.7 mm, below a pixel) as a frost along the surface, denser with
-          // the water the run puts there (faint at ~1 µm, white by ~30 µm)
-          if (prev && h > 0.2) {
-            const a = Math.min(0.75, 0.06 + 0.69 * Math.sqrt(Math.min(1, h / 30)));
-            cx.strokeStyle = `rgba(236,244,255,${a})`; cx.lineWidth = Math.max(1.5, 0.9 * sc); cx.lineCap = 'butt';
-            cx.beginPath(); cx.moveTo(X(prev.x + p.N[0] * 0.2), Y(prev.y + p.N[1] * 0.2)); cx.lineTo(X(p.x + p.N[0] * 0.2), Y(p.y + p.N[1] * 0.2)); cx.stroke();
+          if (h > 0.3) {                                              // drops here: up to 3 candidates per mm
+            const rmax = Math.min(4 * Math.PI * h / 1000 / CV, rdep), rb = Math.min(1.4, 0.35 + rmax * BEAD_X);
+            for (let j = 0; j < 3; j++) {
+              const q = 0.25 + 0.75 * hash(i * 31 + j * 7 + 3, side * 11 + seg * 3) ** 2;
+              beads.push([i + hash(i * 13 + j, seg + side * 2) - 0.5, rb * q, p]);
+            }
           }
           prev = p;
           if (seg === 2 && h / 1000 > CV * rdep / (4 * Math.PI)) {      // level top beyond its largest drops: a puddle
@@ -794,6 +796,20 @@
             cap(p, 0, r, 1);
           }
         });
+        {                                                                // largest first; touching ones have merged
+          beads.sort((a, b) => b[1] - a[1]);
+          const placed = [];
+          for (const b of beads) if (placed.every(q => Math.abs(b[0] - q[0]) >= 1.1 * (b[1] + q[1]))) placed.push(b);
+          for (const [u, r, p] of placed) {
+            // a cap whose base lies on the glass: sphere of radius r / sin(th) centred inside the glass
+            const d = u - Math.round(u), sx = p.x + p.T[0] * d, sy = p.y + p.T[1] * d;
+            const Rs = r / Math.sin(BEAD_TH), c0 = Rs * Math.cos(BEAD_TH);
+            const ox = X(sx - p.N[0] * c0), oy = Y(sy - p.N[1] * c0), base = Math.atan2(-p.N[1], p.N[0]);
+            cx.beginPath(); cx.arc(ox, oy, Rs * sc, base - BEAD_TH, base + BEAD_TH); cx.closePath();
+            cx.fillStyle = 'rgba(205,228,255,0.35)'; cx.fill();
+            cx.strokeStyle = 'rgba(245,250,255,0.9)'; cx.lineWidth = 0.9; cx.stroke();
+          }
+        }
       }
     }
     function drawMist(f0, f1, w) {
