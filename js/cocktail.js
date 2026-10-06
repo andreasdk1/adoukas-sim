@@ -23,30 +23,37 @@
     .then(([meta, fImg, vImg, mImg, iImg, aImg, pImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg), pixels(iImg), iImg.width, pixels(aImg), pImg && pixels(pImg)))
     .catch(() => { el('ck-status').textContent = 'Could not load the simulation data.'; });
 
-  function init(meta, F, V, Mt, ICEPX, ICEW, VA, VP) {
+  function init(meta, F, V, Mt, ICEPX, ICEWA, VA, VP) {
     const NX = meta.nx, NY = meta.ny, NF = meta.frames.length, CELL = meta.cell_mm;
     const WMM = NX * CELL, HMM = NY * CELL;
     const [TLO, THI] = meta.T_range, ABVHI = meta.abv_range[1], VMAX = meta.v_max;
     const TROOM = meta.T_room, TDEW = meta.T_dew, Gm = meta.geometry;
-    const frameSize = NX * NY * 4;
+    // frames are tiles of an atlas (CA columns; older data: one tall strip, CA = 1)
+    const CA = meta.atlas_cols || 1, CAI = meta.ice_atlas_cols || 1, NXA = NX * CA;
+    const ICEW = ICEWA / CAI;
+    const iat = (fr, nC, r, c) => ((((fr / CAI) | 0) * nC + r) * ICEWA + (fr % CAI) * ICEW + c) * 4;
+    const at = (f, k) => ((((f / CA) | 0) * NY + ((k / NX) | 0)) * NXA + (f % CA) * NX + (k % NX)) * 4;
 
     // material per data cell (row 0 = top): 0 air, 1 glass, 2 liquid
     const mat = new Uint8Array(NX * NY);
     for (let k = 0; k < NX * NY; k++) mat[k] = Math.round(Mt[k * 4] / 100);
 
     // decoded field access, frame f, data cell (c, r) with r=0 at top
-    const Tof = (f, k) => TLO + F[f * frameSize + k * 4] / 255 * (THI - TLO);
-    const ABVof = (f, k) => F[f * frameSize + k * 4 + 1] / 255 * ABVHI;
-    const FSof = (f, k) => F[f * frameSize + k * 4 + 2] / 255;
-    const Uof = (f, k) => (V[f * frameSize + k * 4] / 255 * 2 - 1) * VMAX;
-    const Vof = (f, k) => (V[f * frameSize + k * 4 + 1] / 255 * 2 - 1) * VMAX;
+    const Tof = (f, k) => TLO + F[at(f, k)] / 255 * (THI - TLO);
+    const ABVof = (f, k) => F[at(f, k) + 1] / 255 * ABVHI;
+    const FSof = (f, k) => F[at(f, k) + 2] / 255;
+    const Uof = (f, k) => (V[at(f, k)] / 255 * 2 - 1) * VMAX;
+    const Vof = (f, k) => (V[at(f, k) + 1] / 255 * 2 - 1) * VMAX;
     const VMAXA = meta.v_max_air || 0.15;                                    // air velocity, from the simulation
-    const AUof = (f, k) => (VA[f * frameSize + k * 4] / 255 * 2 - 1) * VMAXA;
-    const AVof = (f, k) => (VA[f * frameSize + k * 4 + 1] / 255 * 2 - 1) * VMAXA;
+    const AUof = (f, k) => (VA[at(f, k)] / 255 * 2 - 1) * VMAXA;
+    const AVof = (f, k) => (VA[at(f, k) + 1] / 255 * 2 - 1) * VMAXA;
     // alcohol vapour in the air (kg per kg), from runs with evaporation; without it the view is hidden
     const EMAX = meta.vap_e_max || 0.04;
-    const EVof = (f, k) => VP ? VP[f * frameSize + k * 4] / 255 * EMAX : 0;
-    if (!VP) { el('ck-view-evap').hidden = true; el('ck-evap-row').hidden = true; }
+    const EVof = (f, k) => VP ? VP[at(f, k)] / 255 * EMAX : 0;
+    if (!VP) { el('ck-view-evap').style.display = 'none'; el('ck-evap-row').style.display = 'none'; }
+    // water on the glass (µm of film, thickest in each cell), from runs that track the condensate
+    const HAS_FILM = !!VP && meta.frames[0].film_ul !== undefined;
+    const FILMof = (f, k) => VP[at(f, k) + 2];
 
     // ------------------------------------------------------------ view state
     const st = { pos: 0, playing: true, speed: 0.25, view: 'temp' };
@@ -104,7 +111,7 @@
     const tanA = Gm.half_rim_in / (Gm.rim_y - Gm.apex_in);
     const ALPHA = Math.atan(tanA), SINA = Math.sin(ALPHA), COSA = Math.cos(ALPHA);
     const LWALL = (Gm.rim_y - 2 - (Gm.apex_out + 3)) / COSA;           // usable slant length of the bowl, mm
-    const STEM_TOP = Gm.apex_out + 1, STEM_BOT = 21, STEM_X = 3.2;
+    const STEM_TOP = Gm.apex_out + 1, STEM_BOT = 21, STEM_X = 3.2, FOOT_TOP = 19.5, FOOT_X = 36;
     const R_SLIDE = 1.25, GROW = 4.5e-4, DRY = 2.5e-4;                 // mm, mm/(s·K)
     let drops = [], tPrev = 0;
     function onWall(d) {                                               // drop centre in mm
@@ -112,7 +119,17 @@
         const y = Gm.rim_y - 2 - d.s * COSA;
         return [Gm.cx + d.side * ((y - Gm.apex_out) * tanA + d.r * 0.9), y];
       }
-      return [Gm.cx + d.side * (STEM_X + d.r * 0.9), STEM_TOP - d.s];
+      if (d.seg === 1) return [Gm.cx + d.side * (STEM_X + d.r * 0.9), STEM_TOP - d.s];
+      return [Gm.cx + d.side * (5.5 + d.s), FOOT_TOP + d.r * 0.8];        // over the foot, outwards
+    }
+    function wallFilm(d, f0, f1, w) {                                  // µm of water on the glass at the drop
+      const [x, y] = onWall(d); let h = 0;
+      for (const din of [0.3, 1.0, 1.8]) {
+        const xi = x - d.side * (d.r * 0.9 + din);
+        const k = Math.min(NY - 1, Math.max(0, Math.floor((HMM - y) / CELL))) * NX + Math.min(NX - 1, Math.max(0, Math.floor(xi / CELL)));
+        h = Math.max(h, FILMof(f0, k) * (1 - w) + FILMof(f1, k) * w);
+      }
+      return h;
     }
     function glassT(d, f0, f1, w) {                                    // glass temperature under the drop
       const [x, y] = onWall(d);
@@ -124,13 +141,21 @@
       // nucleation, proportional to simulated time
       const tries = Math.min(40, Math.round(dts * 0.25 + (Math.random() < (dts * 0.25) % 1 ? 1 : 0)));
       for (let k = 0; k < tries && drops.length < 260; k++) {
-        const d = { side: Math.random() < 0.5 ? -1 : 1, seg: 0, s: Math.random() * LWALL, r: 0.25, slide: false, v: 0, trail: [] };
-        if (glassT(d, f0, f1, w) < TDEW - 0.5) drops.push(d);
+        const d = { side: Math.random() < 0.5 ? -1 : 1, seg: 0, s: Math.random() * LWALL, r: 0.25, slide: false, v: 0, trail: [], k: 0.8 + 0.35 * Math.random() };
+        if (HAS_FILM ? wallFilm(d, f0, f1, w) > 2 : glassT(d, f0, f1, w) < TDEW - 0.5) drops.push(d);
       }
       for (const d of drops) {
         if (d.slide) continue;
-        const T = glassT(d, f0, f1, w);
-        d.r += dts * (T < TDEW ? GROW * (TDEW - T) : -DRY * (T - TDEW));
+        if (HAS_FILM) {
+          // a drop's size follows the water the simulation has on the glass there: it grows while
+          // water condenses, shrinks as it evaporates again, and slides once it is big enough to run
+          // (about where the simulated film starts to run, 50 µm)
+          const rt = R_SLIDE * d.k * Math.cbrt(wallFilm(d, f0, f1, w) / 50);
+          d.r += (rt - d.r) * Math.min(1, dts / 20);
+        } else {
+          const T = glassT(d, f0, f1, w);
+          d.r += dts * (T < TDEW ? GROW * (TDEW - T) : -DRY * (T - TDEW));
+        }
         if (d.r > R_SLIDE) d.slide = true;
       }
       // sliding (real time when animating; instant when fast-forwarding)
@@ -141,7 +166,8 @@
         const before = onWall(d);
         d.s += d.v * dtReal;
         if (d.seg === 0 && d.s > LWALL) { d.seg = 1; d.s = 0; }
-        if (d.seg === 1 && STEM_TOP - d.s < STEM_BOT) d.r = 0;
+        if (d.seg === 1 && STEM_TOP - d.s < STEM_BOT) { if (HAS_FILM) { d.seg = 2; d.s = 0; d.v *= 0.5; } else d.r = 0; }
+        if (d.seg === 2) { d.v = Math.min(d.v, 18); if (d.s > FOOT_X - 5.5) d.r = 0; }   // runs off the foot's edge
         d.trail.push(before); if (d.trail.length > 14) d.trail.shift();
       }
       // coalescence along the same side and segment
@@ -287,6 +313,7 @@
       drawIce(f0, f1, w);
       drawSurface(f0, f1, w);
       drawGlass();
+      if (HAS_FILM) { const [g0, g1, gw] = frameAt(st.pos); drawMist(g0, g1, gw); }
       drawDrops();
     }
     // ------------------------------------------------------------ the liquid surface
@@ -318,7 +345,7 @@
         for (const side of [-1, 1]) {
           let pen = 0;
           for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
-            if (ICEPX[((fr * nC + r) * ICEW + ib * nC + c) * 4] < 77) continue;
+            if (ICEPX[iat(fr, nC, r, ib * nC + c)] < 77) continue;
             const lx = (c + 0.5) * cell - b.half, ly = b.half - (r + 0.5) * cell;
             const px = x + cs * lx - sn * ly, py = y + sn * lx + cs * ly;
             pen = Math.max(pen, (side * (px - Gm.cx) - (py - Gm.apex_in) * tanA) * CA_W + 0.5 * cell + 0.15);
@@ -336,7 +363,7 @@
         const nC = b.cells, cell = 2 * b.half / nC, cs = Math.cos(th), sn = Math.sin(th);
         let xl = 1e9, xr = -1e9, area = 0; const pts = [];
         for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
-          const a = ICEPX[((fr * nC + r) * ICEW + ib * nC + c) * 4] / 255;
+          const a = ICEPX[iat(fr, nC, r, ib * nC + c)] / 255;
           if (a < 0.3) continue;
           area += a * cell * cell;
           const lx = (c + 0.5) * cell - b.half, ly = b.half - (r + 0.5) * cell;
@@ -433,12 +460,12 @@
         const nC = b.cells, g = iceCv[ib].getContext('2d'), im = g.createImageData(nC, nC);
         const cellA = (2 * b.half / nC) ** 2;
         let area = 0;
-        for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) area += ICEPX[((fr * nC + r) * ICEW + ib * nC + c) * 4] / 255 * cellA;
+        for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) area += ICEPX[iat(fr, nC, r, ib * nC + c)] / 255 * cellA;
         // the last slivers (< ~6 mm²) are numerically jittery: fade them out
         const fade = Math.min(1, Math.max(0, (area - 3) / 5));
         if (fade <= 0) return;
         for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
-          const a = ICEPX[((fr * nC + r) * ICEW + ib * nC + c) * 4] / 255, o = (r * nC + c) * 4;
+          const a = ICEPX[iat(fr, nC, r, ib * nC + c)] / 255, o = (r * nC + c) * 4;
           im.data[o] = 228; im.data[o + 1] = 240; im.data[o + 2] = 255; im.data[o + 3] = Math.min(255, a * 1.15 * 235) * fade;
         }
         g.putImageData(im, 0, 0);
@@ -486,6 +513,35 @@
       cx.strokeStyle = grd; cx.lineWidth = 3;
       cx.beginPath(); cx.moveTo(X(g.cx - xo + 4), Y(g.rim_y - 6)); cx.lineTo(X(g.cx - 14), Y(g.apex_out + 22)); cx.stroke();
       cx.restore();
+    }
+    // mist: the fine droplets of a fogged glass, as dense as the simulated film (fixed positions per
+    // spot along the wall, so they don't flicker)
+    const hash = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+    function drawMist(f0, f1, w) {
+      if (!HAS_FILM) return;
+      for (const side of [-1, 1]) for (const seg of [0, 1]) {
+        const L = seg === 0 ? LWALL : STEM_TOP - STEM_BOT;
+        let prev = null;
+        for (let s = 0, n = 0; s <= L; s += 0.45, n++) {
+          const h = wallFilm({ side, seg, s, r: 0 }, f0, f1, w);
+          const [xm, ym] = onWall({ side, seg, s, r: 0 });
+          // frost: the glass turns milky as the first micrometres condense
+          if (prev && h > 0.3) {
+            cx.strokeStyle = `rgba(226,238,255,${Math.min(0.55, 0.12 + h / 12)})`; cx.lineWidth = Math.max(1, 0.55 * sc);
+            cx.beginPath(); cx.moveTo(X(prev[0] + side * 0.2), Y(prev[1])); cx.lineTo(X(xm + side * 0.2), Y(ym)); cx.stroke();
+          }
+          prev = [xm, ym];
+          if (h < 1) continue;
+          const nd = Math.min(5, Math.ceil(h / 2.5));
+          cx.fillStyle = 'rgba(232,242,255,0.6)';
+          for (let q = 0; q < nd; q++) {
+            const a = hash(n * 7 + q, side * 3 + seg), b = hash(q * 13 + n, seg - side);
+            const [dx_, dy_] = onWall({ side, seg, s: s + (a - 0.5) * 0.4, r: 0 });
+            const rr = (0.12 + 0.3 * b * Math.min(1, h / 12)) * sc;
+            cx.beginPath(); cx.arc(X(dx_ + side * (0.25 + 0.45 * a)), Y(dy_), Math.max(0.6, rr), 0, Math.PI * 2); cx.fill();
+          }
+        }
+      }
     }
     function drawDrops() {
       for (const d of drops) {
