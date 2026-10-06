@@ -235,9 +235,10 @@
         if (m === 0) {
           const ta = Tof(f0, k) * (1 - w) + Tof(f1, k) * w, dev = ta - TROOM;
           if (st.view === 'temp' && dev < -0.2) {
-            // air: shown as how much colder than the room it is (cool blue, deeper = colder)
+            // air: shown as how much colder than the room it is (a pale blue haze, denser = colder; a
+            // darkening blue would draw a dark rim where the coldest air lies on the cold drink)
             const f = Math.min(1, -dev / 12);
-            d[o] = 120 - 80 * f; d[o + 1] = 200 - 90 * f; d[o + 2] = 245 - 25 * f; d[o + 3] = Math.min(210, -dev * 26);
+            d[o] = 118 + 30 * f; d[o + 1] = 184 + 22 * f; d[o + 2] = 240 + 10 * f; d[o + 3] = Math.min(200, -dev * 22);
           } else if (st.view === 'evap') {
             // air: the alcohol vapour leaving the drink (lavender, brighter = more)
             const e = Math.min(1, (EVof(f0, k) * (1 - w) + EVof(f1, k) * w) / EMAX);
@@ -428,9 +429,12 @@
         // liquid above the flat line (menisci, bulges): fill with the colour beneath
         cx.save();
         const xStart = x0 === xgL ? g.cx - hw : xs[0], xEnd = x1 === xgR ? g.cx + hw : xs[N];
-        cx.beginPath(); cx.moveTo(X(xStart), Y(fy));
+        // (from a little below the line: there the smoothed field blends the drink with the half-transparent
+        // air above it, and the page background would show through as a dark seam)
+        const fb = fy - 0.6 * CELL;
+        cx.beginPath(); cx.moveTo(X(xStart), Y(fb));
         for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.max(ys[i], fy)));
-        cx.lineTo(X(xEnd), Y(fy)); cx.closePath();
+        cx.lineTo(X(xEnd), Y(fb)); cx.closePath();
         // the colour follows the drink right beneath, column by column, so a meniscus is the same
         // liquid as the rest of the surface layer (dips below the line: the air just above, likewise)
         const grad = (dr) => {

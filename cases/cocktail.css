@@ -44,4 +44,4 @@
   .ck-panel { position: static; }
 }
 .ck-air-key { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; }
-.ck-air-key i { width: 26px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, rgba(120,200,245,.15), rgba(40,110,220,.85)); }
+.ck-air-key i { width: 26px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, rgba(118,184,240,.12), rgba(148,206,250,.78)); }
