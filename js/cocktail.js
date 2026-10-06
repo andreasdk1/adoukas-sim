@@ -111,7 +111,9 @@
     const tanA = Gm.half_rim_in / (Gm.rim_y - Gm.apex_in);
     const ALPHA = Math.atan(tanA), SINA = Math.sin(ALPHA), COSA = Math.cos(ALPHA);
     const LWALL = (Gm.rim_y - 2 - (Gm.apex_out + 3)) / COSA;           // usable slant length of the bowl, mm
-    const STEM_TOP = Gm.apex_out + 1, STEM_BOT = 21, STEM_X = 3.2, FOOT_TOP = 19.5, FOOT_X = 36;
+    // the foot's underside: on the table in newer runs, 15 mm above it in older ones
+    const FY = Gm.foot_y ?? 15;
+    const STEM_TOP = Gm.apex_out + 1, STEM_BOT = FY + 6, STEM_X = 3.2, FOOT_TOP = FY + 4.5, FOOT_X = 36;
     const R_SLIDE = 1.25, GROW = 4.5e-4, DRY = 2.5e-4;                 // mm, mm/(s·K)
     let drops = [], tPrev = 0;
     function onWall(d) {                                               // drop centre in mm
@@ -314,7 +316,7 @@
       drawIce(f0, f1, w);
       drawSurface(f0, f1, w);
       drawGlass();
-      if (HAS_FILM) { const [g0, g1, gw] = frameAt(st.pos); drawMist(g0, g1, gw); }
+      if (HAS_FILM) { const [g0, g1, gw] = frameAt(st.pos); drawMist(g0, g1, gw); drawPool(g0, g1, gw); }
       drawDrops();
     }
     // ------------------------------------------------------------ the liquid surface
@@ -513,9 +515,9 @@
       const g = Gm, xo = (g.rim_y - g.apex_out) * tanA;
       cx.beginPath();
       cx.moveTo(X(g.cx - xo), Y(g.rim_y)); cx.lineTo(X(g.cx - 3.2), Y(g.apex_out + 2.5));
-      cx.lineTo(X(g.cx - 3.2), Y(22)); cx.quadraticCurveTo(X(g.cx - 5.5), Y(19.5), X(g.cx - 36), Y(19.5));
-      cx.lineTo(X(g.cx - 36), Y(15)); cx.lineTo(X(g.cx + 36), Y(15)); cx.lineTo(X(g.cx + 36), Y(19.5));
-      cx.quadraticCurveTo(X(g.cx + 5.5), Y(19.5), X(g.cx + 3.2), Y(22)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 2.5));
+      cx.lineTo(X(g.cx - 3.2), Y(FY + 7)); cx.quadraticCurveTo(X(g.cx - 5.5), Y(FY + 4.5), X(g.cx - 36), Y(FY + 4.5));
+      cx.lineTo(X(g.cx - 36), Y(FY)); cx.lineTo(X(g.cx + 36), Y(FY)); cx.lineTo(X(g.cx + 36), Y(FY + 4.5));
+      cx.quadraticCurveTo(X(g.cx + 5.5), Y(FY + 4.5), X(g.cx + 3.2), Y(FY + 7)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 2.5));
       cx.lineTo(X(g.cx + xo), Y(g.rim_y)); cx.closePath();
       cx.moveTo(X(g.cx - g.half_rim_in), Y(g.rim_y)); cx.lineTo(X(g.cx), Y(g.apex_in)); cx.lineTo(X(g.cx + g.half_rim_in), Y(g.rim_y)); cx.closePath();
     }
@@ -527,9 +529,9 @@
       cx.strokeStyle = 'rgba(235,242,255,0.75)'; cx.lineWidth = 1.3;
       cx.beginPath();
       cx.moveTo(X(g.cx - xo), Y(g.rim_y)); cx.lineTo(X(g.cx - 3.2), Y(g.apex_out + 2.5));
-      cx.lineTo(X(g.cx - 3.2), Y(22)); cx.quadraticCurveTo(X(g.cx - 5.5), Y(19.5), X(g.cx - 36), Y(19.5));
-      cx.lineTo(X(g.cx - 36), Y(15)); cx.lineTo(X(g.cx + 36), Y(15)); cx.lineTo(X(g.cx + 36), Y(19.5));
-      cx.quadraticCurveTo(X(g.cx + 5.5), Y(19.5), X(g.cx + 3.2), Y(22)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 2.5));
+      cx.lineTo(X(g.cx - 3.2), Y(FY + 7)); cx.quadraticCurveTo(X(g.cx - 5.5), Y(FY + 4.5), X(g.cx - 36), Y(FY + 4.5));
+      cx.lineTo(X(g.cx - 36), Y(FY)); cx.lineTo(X(g.cx + 36), Y(FY)); cx.lineTo(X(g.cx + 36), Y(FY + 4.5));
+      cx.quadraticCurveTo(X(g.cx + 5.5), Y(FY + 4.5), X(g.cx + 3.2), Y(FY + 7)); cx.lineTo(X(g.cx + 3.2), Y(g.apex_out + 2.5));
       cx.lineTo(X(g.cx + xo), Y(g.rim_y)); cx.stroke();
       // inner surface and rim
       cx.strokeStyle = 'rgba(235,242,255,0.45)'; cx.lineWidth = 1;
@@ -547,6 +549,24 @@
     // mist: the fine droplets of a fogged glass, as dense as the simulated film (fixed positions per
     // spot along the wall, so they don't flicker)
     const hash = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+    // The water that ran off the foot: a puddle round its edge on the table (simulated volume, 3D).
+    // Spread as a sessile film about 1.4 mm high (water on a table, contact angle ~60°), so its
+    // width follows from the volume over the ring round the foot (2 pi FOOT_X long).
+    const H_POOL = 1.4;
+    function drawPool(f0, f1, w) {
+      const v = (meta.frames[f0].pool_ul || 0) * (1 - w) + (meta.frames[f1].pool_ul || 0) * w;   // mm³
+      if (v < 0.05) return;
+      const hp = Math.min(H_POOL, Math.sqrt(v / (2 * Math.PI * FOOT_X) / 0.7)), wd = v / (2 * Math.PI * FOOT_X * hp * 0.7);
+      for (const side of [-1, 1]) {
+        const x0 = Gm.cx + side * FOOT_X, x1 = x0 + side * wd;
+        cx.beginPath(); cx.moveTo(X(x0), Y(FY));
+        cx.lineTo(X(x0), Y(FY + hp));
+        cx.bezierCurveTo(X(x0 + side * wd * 0.5), Y(FY + hp), X(x1), Y(FY + hp * 0.6), X(x1), Y(FY));
+        cx.closePath();
+        cx.fillStyle = 'rgba(200,225,255,0.35)'; cx.fill();
+        cx.strokeStyle = 'rgba(255,255,255,0.6)'; cx.lineWidth = 0.8; cx.stroke();
+      }
+    }
     function drawMist(f0, f1, w) {
       if (!HAS_FILM) return;
       for (const side of [-1, 1]) for (const seg of [0, 1]) {
