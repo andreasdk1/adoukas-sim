@@ -321,8 +321,9 @@
     // Menisci from capillarity (to scale): the surface climbs the glass (contact angle ~30°)
     // and the ice (~0°) and relaxes over the capillary length lc = sqrt(sigma / rho g), which
     // follows the alcohol content of the top layer. Between them, the surface height from the
-    // pressure under the (rigid-lid) surface in the simulation, exaggerated SURF_EXAG times.
-    const SURF_EXAG = 12;
+    // pressure under the (rigid-lid) surface in the simulation, to scale (tens of µm): an
+    // exaggerated height drew the surface below the drink the simulation has there.
+    const SURF_EXAG = 1;
     const SIG_A = [0, 0.062, 0.123, 0.24, 0.36], SIG_V = [72.0, 56.4, 48.1, 38.0, 33.0];
     function sigmaOf(abv) {
       let i = 0; while (i < SIG_A.length - 2 && abv > SIG_A[i + 1]) i++;
@@ -403,7 +404,7 @@
         if (!e0) return 0;
         const u = Math.min(e0.length - 1.001, Math.max(0, x / CELL - 0.5)), i = Math.floor(u), t = u - i;
         const a = e0[i] * (1 - t) + e0[i + 1] * t, b = e1[i] * (1 - t) + e1[i + 1] * t;
-        return (a * (1 - w) + b * w) * 1e-3 * SURF_EXAG;                                 // mm, exaggerated
+        return (a * (1 - w) + b * w) * 1e-3 * SURF_EXAG;                                 // mm
       };
       // free stretches of surface between the glass and the cubes
       // the drink touches the glass where the wall is at the meniscus height (the wall slopes outwards)
@@ -449,6 +450,16 @@
         cx.save();
         cx.beginPath(); cx.moveTo(X(g.cx - g.half_rim_in), Y(g.rim_y)); cx.lineTo(X(g.cx), Y(g.apex_in));
         cx.lineTo(X(g.cx + g.half_rim_in), Y(g.rim_y)); cx.closePath(); cx.clip();
+        // above the surface the smoothed field still blends in the drink's colour (up to half a cell
+        // over its level): there it shows the air of the row above instead
+        const ft = fy + CELL;
+        cx.save();
+        cx.beginPath(); cx.moveTo(X(xStart), Y(ft));
+        for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.min(ft, Math.max(ys[i], fy))));
+        cx.lineTo(X(xEnd), Y(ft)); cx.closePath(); cx.clip();
+        cx.clearRect(0, 0, W, H);
+        cx.drawImage(off, 0, ROW_TOP - 1, NX, 1, 0, Y(ft + CELL), W, Y(fy - CELL) - Y(ft + CELL));
+        cx.restore();
         cx.beginPath(); cx.moveTo(X(xStart), Y(fb));
         for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.max(ys[i], fy)));
         cx.lineTo(X(xEnd), Y(fb)); cx.closePath(); cx.clip();
