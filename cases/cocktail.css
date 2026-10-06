@@ -22,6 +22,7 @@
 .lg[hidden] { display: none; }
 .lg em { font-style: normal; opacity: .85; }
 .ramp { display: block; width: 160px; height: 8px; border-radius: 4px; }
+.ramp.ck-evap { background: linear-gradient(90deg, rgba(190,160,255,0.05), #9c86e0, #d9ccff); }
 .ramp.ck-temp { background: linear-gradient(90deg, #182268, #2a68d0, #60bee8, #e2ecfa, #f2ba6e, #d9603b); }
 .ramp.ck-abv { background: linear-gradient(90deg, #46aaeb, #96c8d2, #ecc86a); }
 

@@ -52,6 +52,7 @@
           <label><input type="radio" name="ck-view" value="temp" checked><span>Temperature</span></label>
           <label><input type="radio" name="ck-view" value="abv"><span>Dilution</span></label>
           <label><input type="radio" name="ck-view" value="flow"><span>Flow</span></label>
+          <label id="ck-view-evap"><input type="radio" name="ck-view" value="evap"><span>Evaporation</span></label>
         </div>
       </div>
       <div id="ck-stage" class="ck-stage">
@@ -63,6 +64,7 @@
         <div id="ck-legend-temp" class="lg"><span>−10 °C</span><i class="ramp ck-temp"></i><span>25 °C</span><em>drink and glass</em><span class="ck-air-key"><i></i>air colder than the room</span></div>
         <div id="ck-legend-abv" class="lg" hidden><span>≤ 20 %</span><i class="ramp ck-abv"></i><span>30 % ABV</span><em>alcohol content (meltwater shows as blue)</em></div>
         <div id="ck-legend-flow" class="lg" hidden><em>streaks show the direction of flow in the drink and in the air</em></div>
+        <div id="ck-legend-evap" class="lg" hidden><span>0</span><i class="ramp ck-evap"></i><span>4 g</span><em>alcohol vapour per 100 g of air; the drink in temperature colours</em></div>
       </div>
     </div>
 
@@ -84,6 +86,7 @@
         <div><dt>Ice left</dt><dd id="ck-ice">–</dd></div>
         <div><dt>ABV top / bottom</dt><dd id="ck-abv">–</dd></div>
         <div><dt>Condensation on the bowl</dt><dd id="ck-dew">–</dd></div>
+        <div id="ck-evap-row"><dt>Evaporated so far</dt><dd id="ck-evap">–</dd></div>
       </dl>
       <canvas id="ck-chart" class="ck-chart" aria-label="Drink temperature and ice remaining over time"></canvas>
       <p class="ck-chart-key"><i style="background:#e9c46a"></i>drink temperature <i style="background:#a9d8ff"></i>ice left</p>

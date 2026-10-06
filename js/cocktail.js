@@ -18,11 +18,12 @@
     return g.getImageData(0, 0, img.width, img.height).data;
   }
 
-  Promise.all([fetch(BASE + 'meta.json').then(r => r.json()), loadImg(BASE + 'fields.png'), loadImg(BASE + 'vel.png'), loadImg(BASE + 'material.png'), loadImg(BASE + 'ice.png'), loadImg(BASE + 'vela.png')])
-    .then(([meta, fImg, vImg, mImg, iImg, aImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg), pixels(iImg), iImg.width, pixels(aImg)))
+  Promise.all([fetch(BASE + 'meta.json').then(r => r.json()), loadImg(BASE + 'fields.png'), loadImg(BASE + 'vel.png'), loadImg(BASE + 'material.png'), loadImg(BASE + 'ice.png'), loadImg(BASE + 'vela.png'),
+               loadImg(BASE + 'vap.png').catch(() => null)])
+    .then(([meta, fImg, vImg, mImg, iImg, aImg, pImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg), pixels(iImg), iImg.width, pixels(aImg), pImg && pixels(pImg)))
     .catch(() => { el('ck-status').textContent = 'Could not load the simulation data.'; });
 
-  function init(meta, F, V, Mt, ICEPX, ICEW, VA) {
+  function init(meta, F, V, Mt, ICEPX, ICEW, VA, VP) {
     const NX = meta.nx, NY = meta.ny, NF = meta.frames.length, CELL = meta.cell_mm;
     const WMM = NX * CELL, HMM = NY * CELL;
     const [TLO, THI] = meta.T_range, ABVHI = meta.abv_range[1], VMAX = meta.v_max;
@@ -42,6 +43,10 @@
     const VMAXA = meta.v_max_air || 0.15;                                    // air velocity, from the simulation
     const AUof = (f, k) => (VA[f * frameSize + k * 4] / 255 * 2 - 1) * VMAXA;
     const AVof = (f, k) => (VA[f * frameSize + k * 4 + 1] / 255 * 2 - 1) * VMAXA;
+    // alcohol vapour in the air (kg per kg), from runs with evaporation; without it the view is hidden
+    const EMAX = meta.vap_e_max || 0.04;
+    const EVof = (f, k) => VP ? VP[f * frameSize + k * 4] / 255 * EMAX : 0;
+    if (!VP) { el('ck-view-evap').hidden = true; el('ck-evap-row').hidden = true; }
 
     // ------------------------------------------------------------ view state
     const st = { pos: 0, playing: true, speed: 0.25, view: 'temp' };
@@ -207,6 +212,10 @@
             // air: shown as how much colder than the room it is (cool blue, deeper = colder)
             const f = Math.min(1, -dev / 12);
             d[o] = 120 - 80 * f; d[o + 1] = 200 - 90 * f; d[o + 2] = 245 - 25 * f; d[o + 3] = Math.min(210, -dev * 26);
+          } else if (st.view === 'evap') {
+            // air: the alcohol vapour leaving the drink (lavender, brighter = more)
+            const e = Math.min(1, (EVof(f0, k) * (1 - w) + EVof(f1, k) * w) / EMAX);
+            d[o] = 156 + 60 * e; d[o + 1] = 134 + 70 * e; d[o + 2] = 224 + 31 * e; d[o + 3] = Math.min(235, e * 380);
           } else d[o + 3] = 0;
           continue;
         }
@@ -539,6 +548,10 @@
       el('ck-abv').textContent = `${(lerpStat('abv_top') * 100).toFixed(0)} % / ${(lerpStat('abv_bot') * 100).toFixed(0)} %`;
       const wet = lerpStat('wet');
       el('ck-dew').textContent = wet > 0.02 ? `wet · ${Math.round(wet * 100)} %` : 'dry';
+      if (VP && meta.frames[0].evap_pct !== undefined) {
+        const v = lerpStat('evap_pct'), a = lerpStat('ethanol_lost_pct'), lv = lerpStat('level_drop_mm');
+        el('ck-evap').textContent = `${v.toFixed(v < 1 ? 2 : 1)} % of the drink · ${a.toFixed(a < 1 ? 2 : 1)} % of its alcohol · level −${lv < 1 ? Math.round(lv * 1000) + ' µm' : lv.toFixed(2) + ' mm'}`;
+      }
       el('ck-scrub').value = st.pos;
     }
     // small chart: drink temperature and ice remaining vs time
@@ -593,6 +606,7 @@
       el('ck-legend-temp').hidden = st.view !== 'temp';
       el('ck-legend-abv').hidden = st.view !== 'abv';
       el('ck-legend-flow').hidden = st.view !== 'flow';
+      el('ck-legend-evap').hidden = st.view !== 'evap';
     }));
     document.querySelectorAll('input[name="ck-speed"]').forEach(r => r.addEventListener('change', e => { st.speed = +e.target.value; }));
 
