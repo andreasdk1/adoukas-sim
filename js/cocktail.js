@@ -849,6 +849,18 @@
     // ------------------------------------------------------------ controls
     const scrub = el('ck-scrub'); scrub.max = NF - 1; scrub.step = 0.01;
     scrub.addEventListener('input', () => { st.pos = +scrub.value; if (st.pos < NF - 1) el('ck-play').textContent = st.playing ? 'Pause' : 'Play'; });
+    // click or drag on the chart: go to that time (the chart's axis is linear in time, the frames are not)
+    function chartSeek(e) {
+      const r = chart.getBoundingClientRect(), pad = 6, tEnd = meta.frames[NF - 1].t;
+      const t = Math.max(0, Math.min(1, (e.clientX - r.left - pad) / (r.width - 2 * pad))) * tEnd;
+      let lo = 0, hi = NF - 1;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (meta.frames[m].t <= t) lo = m; else hi = m; }
+      const t0 = meta.frames[lo].t, t1 = meta.frames[hi].t;
+      st.pos = Math.min(NF - 1, lo + (t1 > t0 ? Math.max(0, Math.min(1, (t - t0) / (t1 - t0))) : 0));
+      if (st.pos < NF - 1) el('ck-play').textContent = st.playing ? 'Pause' : 'Play';
+    }
+    chart.addEventListener('pointerdown', e => { chart.setPointerCapture(e.pointerId); chartSeek(e); });
+    chart.addEventListener('pointermove', e => { if (chart.hasPointerCapture(e.pointerId)) chartSeek(e); });
     el('ck-play').addEventListener('click', () => {
       if (st.pos >= NF - 1) st.pos = 0;
       st.playing = !st.playing; el('ck-play').textContent = st.playing ? 'Pause' : 'Play';
