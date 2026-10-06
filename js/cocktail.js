@@ -331,6 +331,7 @@
     }
     const topRow = new Int16Array(NX).fill(-1);
     for (let c = 0; c < NX; c++) for (let r = 0; r < NY; r++) if (mat[r * NX + c] === 2) { topRow[c] = r; break; }
+    const ROW_TOP = Math.min(...Array.from(topRow).filter(r => r >= 0));
     // Pose of ice body ib between two stored frames: centre and angle interpolated, then pushed
     // back out of the glass if needed. A piece rolling along the wall between frames would
     // otherwise be drawn partly inside it, which the simulation never allows.
@@ -432,11 +433,8 @@
         // (from a little below the line: there the smoothed field blends the drink with the half-transparent
         // air above it, and the page background would show through as a dark seam)
         const fb = fy - 0.6 * CELL;
-        cx.beginPath(); cx.moveTo(X(xStart), Y(fb));
-        for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.max(ys[i], fy)));
-        cx.lineTo(X(xEnd), Y(fb)); cx.closePath();
-        // the colour follows the drink right beneath, column by column, so a meniscus is the same
-        // liquid as the rest of the surface layer (dips below the line: the air just above, likewise)
+        // the meniscus is the drink's own surface layer: its top row of the field image, with the same
+        // smoothing, carried up to the curved surface, and only ever inside the bowl
         const grad = (dr) => {
           const gr = cx.createLinearGradient(X(xStart), 0, X(xEnd), 0), span = Math.max(1e-6, xEnd - xStart);
           let any = false;
@@ -448,7 +446,16 @@
           if (!any) { const cm = Math.min(NX - 1, Math.max(0, Math.round((x0 + x1) / 2 / CELL))), o = (Math.max(0, topRow[cm] + dr) * NX + cm) * 4; return `rgb(${d[o]},${d[o + 1]},${d[o + 2]})`; }
           return gr;
         };
-        cx.fillStyle = grad(0); cx.fill();
+        cx.save();
+        cx.beginPath(); cx.moveTo(X(g.cx - g.half_rim_in), Y(g.rim_y)); cx.lineTo(X(g.cx), Y(g.apex_in));
+        cx.lineTo(X(g.cx + g.half_rim_in), Y(g.rim_y)); cx.closePath(); cx.clip();
+        cx.beginPath(); cx.moveTo(X(xStart), Y(fb));
+        for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.max(ys[i], fy)));
+        cx.lineTo(X(xEnd), Y(fb)); cx.closePath(); cx.clip();
+        const yTop = Math.max(...ys, fy) + 0.5;
+        cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+        cx.drawImage(off, 0, ROW_TOP, NX, 1, 0, Y(yTop), W, Y(fb) - Y(yTop));
+        cx.restore();
         cx.fillStyle = grad(-1);
         cx.beginPath(); cx.moveTo(X(xs[0]), Y(fy));
         for (let i = 0; i <= N; i++) cx.lineTo(X(xs[i]), Y(Math.min(ys[i], fy)));
