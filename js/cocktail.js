@@ -29,35 +29,65 @@
   // grid, the room air one value per quadtree leaf, the ice on its 0.25 mm cells. Each stretch of the run
   // between restarts (grid switch, level steps) has its own mesh. Frames are decoded on demand onto the
   // finest grid of the run: the air is rebuilt with the solver's own interpolation between the leaves.
+  // the frames' values, channel by channel (frame g, entry i at g * L + i), from an atlas of n blocks
+  function takeFrames(img, chans, n, L, bw, bh, cols) {
+    const px = pixels(img), AW = img.width, out = chans.map(() => new Uint8Array(n * L));
+    for (let g = 0; g < n; g++) {
+      const r0 = ((g / cols) | 0) * bh, c0 = (g % cols) * bw;
+      for (let i = 0; i < L; i++) {
+        const o = ((r0 + ((i / bw) | 0)) * AW + c0 + (i % bw)) * 4;
+        for (let q = 0; q < chans.length; q++) out[q][g * L + i] = px[o + chans[q]];
+      }
+    }
+    return out;
+  }
+  const chanSet = imgs => {
+    const [T, A, FS] = imgs[0], [U, V] = imgs[1], [AU, AV] = imgs[2], [EV, WV, FILM, PEAK] = imgs[3];
+    return { T, A, FS, U, V, AU, AV, EV, WV, FILM, PEAK };
+  };
   async function loadNative(meta) {
-    const NB = BASE + 'native/', NM = meta.native;
+    const NB = BASE + 'native/', NM = meta.native, STREAMED = !!NM.chunk;
     const TYPED = { uint8: Uint8Array, int32: Int32Array, float32: Float32Array };
     const segs = await Promise.all(NM.segments.filter(sg => sg.n > 0).map(async sg => {
       const [mj, bin, ...imgs] = await Promise.all([
         fetch(NB + `seg${sg.seg}_mesh.json`).then(r => r.json()), fetch(NB + `seg${sg.seg}_mesh.bin`).then(r => r.arrayBuffer()),
-        ...['fields', 'vel', 'vela', 'vap'].map(n => loadImg(NB + `seg${sg.seg}_${n}.png`))]);
+        ...(STREAMED ? [] : ['fields', 'vel', 'vela', 'vap'].map(n => loadImg(NB + `seg${sg.seg}_${n}.png`)))]);
       const arr = n => { const a = mj.arrays[n]; return new TYPED[a.dtype](bin, a.offset, a.length); };
-      const ns = mj.solid_cells, L = ns + mj.leaves, bw = mj.block_w, bh = mj.block_h, cols = sg.cols;
-      // the frames' values, channel by channel (frame g, entry i at g * L + i)
-      const take = (img, chans) => {
-        const px = pixels(img), AW = img.width, out = chans.map(() => new Uint8Array(sg.n * L));
-        for (let g = 0; g < sg.n; g++) {
-          const r0 = ((g / cols) | 0) * bh, c0 = (g % cols) * bw;
-          for (let i = 0; i < L; i++) {
-            const o = ((r0 + ((i / bw) | 0)) * AW + c0 + (i % bw)) * 4;
-            for (let q = 0; q < chans.length; q++) out[q][g * L + i] = px[o + chans[q]];
-          }
-        }
-        return out;
-      };
-      const [T, A, FS] = take(imgs[0], [0, 1, 2]), [U, V] = take(imgs[1], [0, 1]), [AU, AV] = take(imgs[2], [0, 1]);
-      const [EV, WV, FILM] = take(imgs[3], [0, 1, 2]);
-      return { ...sg, nx: mj.nx, ny: mj.ny, dx: mj.dx_mm, ns, L, nq: mj.leaves, mat: arr('material'),
-               airCells: arr('air_cells'), airLeaf: arr('air_leaf'), ip: arr('prolong_indptr'), il: arr('prolong_leaf'), iw: arr('prolong_w'),
-               ch: { T, A, FS, U, V, AU, AV, EV, WV, FILM } };
+      const ns = mj.solid_cells, L = ns + mj.leaves, bw = mj.block_w, bh = mj.block_h;
+      const out = { ...sg, nx: mj.nx, ny: mj.ny, dx: mj.dx_mm, ns, L, bw, bh, nq: mj.leaves, mat: arr('material'),
+                    airCells: arr('air_cells'), airLeaf: arr('air_leaf'), ip: arr('prolong_indptr'), il: arr('prolong_leaf'), iw: arr('prolong_w') };
+      if (!STREAMED) out.ch = chanSet(imgs.map((im, q) => takeFrames(im, [[0, 1, 2], [0, 1], [0, 1], [0, 1, 2, 3]][q], sg.n, L, bw, bh, sg.cols)));
+      return out;
     }));
-    const iImg = await loadImg(NB + 'ice.png');
-    init(meta, null, null, null, pixels(iImg), iImg.width, null, true, segs);
+    // streamed runs: the frames come in chunks of NM.chunk, loaded around where the player is
+    // (with their stats); a handful are kept
+    const stream = STREAMED ? (() => {
+      const CHK = NM.chunk, CC = NM.chunk_cols, held = new Map(), MAXHELD = 12;
+      const where = f => { const sg = segs.find(s_ => f >= s_.first && f < s_.first + s_.n) || segs[segs.length - 1];
+                           const j = Math.floor((f - sg.first) / CHK); return { sg, j, g: f - sg.first - j * CHK, key: sg.seg + ':' + j }; };
+      const load = f => {
+        if (f < 0 || f >= meta.frames.length) return null;
+        const { sg, j, key } = where(f);
+        if (held.has(key)) { const c = held.get(key); held.delete(key); held.set(key, c); return c.p; }
+        const n = Math.min(CHK, sg.n - j * CHK), pre = NB + `seg${sg.seg}_c${j}`, c = { ready: false };
+        c.p = Promise.all([...['fields', 'vel', 'vela', 'vap', 'ice'].map(nm => loadImg(`${pre}_${nm}.png`)), fetch(pre + '.json').then(r => r.json())])
+          .then(([fI, vI, aI, pI, iI, st_]) => {
+            c.ch = chanSet([[fI, [0, 1, 2]], [vI, [0, 1]], [aI, [0, 1]], [pI, [0, 1, 2, 3]]].map(([im, chs]) => takeFrames(im, chs, n, sg.L, sg.bw, sg.bh, CC)));
+            c.ice = pixels(iI); c.iceW = iI.width / CC;
+            st_.forEach((x, i) => Object.assign(meta.frames[sg.first + j * CHK + i], x));
+            c.ready = true;
+          }).catch(e => { held.delete(key); console.error(e); });
+        held.set(key, c);
+        while (held.size > MAXHELD) held.delete(held.keys().next().value);
+        return c.p;
+      };
+      const get = f => { const w_ = where(f), c = held.get(w_.key); return c && c.ready ? { c, g: w_.g, sg: w_.sg } : null; };
+      return { load, get, ready: f => !!get(f), CHK, CC };
+    })() : null;
+    let iImg = null;
+    if (stream) await stream.load(0); else iImg = await loadImg(NB + 'ice.png');
+    segs.stream = stream;
+    init(meta, null, null, null, iImg && pixels(iImg), iImg && iImg.width, null, true, segs);
   }
 
   function init(meta, F, V, Mt, ICEPX, ICEWA, VA, VP, NSEG) {
@@ -75,6 +105,12 @@
     const CA = meta.atlas_cols || 1, CAI = (NSEG ? meta.native.ice_atlas_cols : meta.ice_atlas_cols) || 1, NXA = NX * CA;
     const ICEW = ICEWA / CAI;
     const iat = (fr, nC, r, c) => ((((fr / CAI) | 0) * nC + r) * ICEWA + (fr % CAI) * ICEW + c) * 4;
+    // the ice's 0.25 mm cells (0-255) of frame fr, block row r, column c (streamed runs: from the frame's chunk)
+    const ICE = NSEG && NSEG.stream ? (fr, nC, r, c) => {
+      const S_ = NSEG.stream.get(fr); if (!S_) return 0;
+      const CC = NSEG.stream.CC, W_ = S_.c.iceW * CC;
+      return S_.c.ice[((((S_.g / CC) | 0) * nC + r) * W_ + (S_.g % CC) * S_.c.iceW + c) * 4];
+    } : (fr, nC, r, c) => ICEPX[iat(fr, nC, r, c)];
     const at = (f, k) => ((((f / CA) | 0) * NY + ((k / NX) | 0)) * NXA + (f % CA) * NX + (k % NX)) * 4;
 
     // material per data cell (row 0 = top): 0 air, 1 glass, 2 liquid (native data: per segment)
@@ -118,13 +154,14 @@
         return y;
       };
       const decode = f => {
-        const sg = segOf(f), base = (f - sg.first) * sg.L, ch = sg.ch, nc = sg.nx * sg.ny;
+        const S_ = NSEG.stream && NSEG.stream.get(f), sg = S_ ? S_.sg : segOf(f), nc = sg.nx * sg.ny;
+        const base = (S_ ? S_.g : f - sg.first) * sg.L, ch = S_ ? S_.c.ch : sg.ch;
         const air = { T: prolong(sg, ch.T, base), AU: prolong(sg, ch.AU, base), AV: prolong(sg, ch.AV, base),
                       EV: prolong(sg, ch.EV, base), WV: prolong(sg, ch.WV, base) };
         // values on the segment's own cells (8-bit scale), channel by channel; zero velocity is 127.5
         const vals = {};
-        for (const name of ['T', 'A', 'FS', 'U', 'V', 'AU', 'AV', 'EV', 'WV', 'FILM', 'RUN']) {
-          const a = new Float32Array(nc), C = name === 'RUN' ? ch.WV : ch[name], A_ = name === 'RUN' ? null : air[name];
+        for (const name of ['T', 'A', 'FS', 'U', 'V', 'AU', 'AV', 'EV', 'WV', 'FILM', 'RUN', 'PEAK']) {
+          const a = new Float32Array(nc), C = name === 'RUN' ? ch.WV : name === 'PEAK' && !(meta.film && meta.film.peak) ? ch.FILM : ch[name], A_ = name === 'RUN' || name === 'PEAK' ? null : air[name];
           const zero = (name === 'U' || name === 'V' || name === 'AU' || name === 'AV' || name === 'WV') ? 127.5 : 0;
           for (let k = 0; k < nc; k++) {
             const si = sg.solidIdx[k];
@@ -133,14 +170,14 @@
           }
           vals[name] = a;
         }
-        const N = NX * NY, D = { F: new Uint8ClampedArray(N * 4), V: new Uint8ClampedArray(N * 4), VA: new Uint8ClampedArray(N * 4), VP: new Uint8ClampedArray(N * 4), RN: new Uint8ClampedArray(N) };
+        const N = NX * NY, D = { F: new Uint8ClampedArray(N * 4), V: new Uint8ClampedArray(N * 4), VA: new Uint8ClampedArray(N * 4), VP: new Uint8ClampedArray(N * 4), RN: new Uint8ClampedArray(N), PK: new Uint8ClampedArray(N) };
         const put = (dst, o, a, k) => { let v = 0; for (let q = 0; q < 4; q++) { const ks = sg.fsrc[k * 4 + q]; if (ks < 0) break; v += sg.fw[k * 4 + q] * a[ks]; } dst[o] = v; };
         for (let k = 0; k < N; k++) {
           const o = k * 4;
           put(D.F, o, vals.T, k); put(D.F, o + 1, vals.A, k); put(D.F, o + 2, vals.FS, k);
           put(D.V, o, vals.U, k); put(D.V, o + 1, vals.V, k); put(D.VA, o, vals.AU, k); put(D.VA, o + 1, vals.AV, k);
           put(D.VP, o, vals.EV, k); put(D.VP, o + 1, vals.WV, k); put(D.VP, o + 2, vals.FILM, k);
-          { const ks = sg.fsrc[k * 4]; D.RN[k] = ks >= 0 ? vals.RUN[ks] : 0; }   // running water: nearest cell, not blended
+          { const ks = sg.fsrc[k * 4]; D.RN[k] = ks >= 0 ? vals.RUN[ks] : 0; D.PK[k] = ks >= 0 ? vals.PEAK[ks] : 0; }   // running water, peak: nearest cell
         }
         return D;
       };
@@ -174,6 +211,7 @@
     // runs with the drop model carry the water on the glass on a square-root scale (µm) and the water
     // running down it (mm³, log scale); older runs the film in µm directly
     const FM = NSEG && meta.film ? meta.film : null;
+    const PEAKof = (f, k) => (fr_(f).PK[k] / 255) ** 2 * FM.max_um;   // most water held so far (µm)
     const FILMof = NSEG ? (FM ? (f, k) => (fr_(f).VP[k * 4 + 2] / 255) ** 2 * FM.max_um : (f, k) => fr_(f).VP[k * 4 + 2]) : (f, k) => VP[at(f, k) + 2];
     const RUNof = (f, k) => { const c = FM ? fr_(f).RN[k] : 0; return c ? 10 ** ((c - 1) / 254 * 5 - 4) : 0; };
 
@@ -502,7 +540,7 @@
         for (const side of [-1, 1]) {
           let pen = 0;
           for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
-            if (ICEPX[iat(fr, nC, r, ib * nC + c)] < 77) continue;
+            if (ICE(fr, nC, r, ib * nC + c) < 77) continue;
             const lx = (c + 0.5) * cell - b.half, ly = b.half - (r + 0.5) * cell;
             const px = x + cs * lx - sn * ly, py = y + sn * lx + cs * ly;
             pen = Math.max(pen, (side * (px - Gm.cx) - (py - Gm.apex_in) * tanA) * CA_W + 0.5 * cell + 0.15);
@@ -520,7 +558,7 @@
         const nC = b.cells, cell = 2 * b.half / nC, cs = Math.cos(th), sn = Math.sin(th);
         let xl = 1e9, xr = -1e9, area = 0; const pts = [];
         for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
-          const a = ICEPX[iat(fr, nC, r, ib * nC + c)] / 255;
+          const a = ICE(fr, nC, r, ib * nC + c) / 255;
           if (a < 0.3) continue;
           area += a * cell * cell;
           const lx = (c + 0.5) * cell - b.half, ly = b.half - (r + 0.5) * cell;
@@ -644,12 +682,12 @@
         const nC = b.cells, g = iceCv[ib].getContext('2d'), im = g.createImageData(nC, nC);
         const cellA = (2 * b.half / nC) ** 2;
         let area = 0;
-        for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) area += ICEPX[iat(fr, nC, r, ib * nC + c)] / 255 * cellA;
+        for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) area += ICE(fr, nC, r, ib * nC + c) / 255 * cellA;
         // the last slivers (< ~6 mm²) are numerically jittery: fade them out
         const fade = Math.min(1, Math.max(0, (area - 3) / 5));
         if (fade <= 0) return;
         for (let r = 0; r < nC; r++) for (let c = 0; c < nC; c++) {
-          const a = ICEPX[iat(fr, nC, r, ib * nC + c)] / 255, o = (r * nC + c) * 4;
+          const a = ICE(fr, nC, r, ib * nC + c) / 255, o = (r * nC + c) * 4;
           // opaque from half ice: partly melted ice inside a piece (its top, slowly melted by the air) would
           // otherwise let the drink/air edge behind it show through as a line at the drink's level
           im.data[o] = 228; im.data[o + 1] = 240; im.data[o + 2] = 255; im.data[o + 3] = 255 * Math.min(1, Math.max(0, (a - 0.1) / 0.4)) * fade;
@@ -775,11 +813,14 @@
         let prev = null; const beads = [];
         pts.forEach((p, i) => {
           const h = filmAt(p, f0, f1, w, FILMof);                     // µm
+          // which drops there are and which have merged follows the most water this spot has held; as it
+          // evaporates they shrink in place (volume with the water now)
+          const hp = Math.max(h, filmAt(p, f0, f1, w, PEAKof));
           if (h > 0.3) {                                              // drops here: up to 3 candidates per mm
-            const rmax = Math.min(4 * Math.PI * h / 1000 / CV, rdep), rb = Math.min(1.4, 0.35 + rmax * BEAD_X);
+            const rmax = Math.min(4 * Math.PI * hp / 1000 / CV, rdep), rb = Math.min(1.4, 0.35 + rmax * BEAD_X);
             for (let j = 0; j < 3; j++) {
               const q = 0.25 + 0.75 * hash(i * 31 + j * 7 + 3, side * 11 + seg * 3) ** 2;
-              beads.push([i + hash(i * 13 + j, seg + side * 2) - 0.5, rb * q, p]);
+              beads.push([i + hash(i * 13 + j, seg + side * 2) - 0.5, rb * q, p, Math.cbrt(h / hp)]);
             }
           }
           prev = p;
@@ -796,10 +837,25 @@
             cap(p, 0, r, 1);
           }
         });
-        {                                                                // largest first; touching ones have merged
-          beads.sort((a, b) => b[1] - a[1]);
-          const placed = [];
-          for (const b of beads) if (placed.every(q => Math.abs(b[0] - q[0]) >= 1.1 * (b[1] + q[1]))) placed.push(b);
+        {
+          // coalescence: drops that touch become one, with their volume (r³ adds), at their centre of
+          // volume; repeated until none touch. Worked out from the current water, so it is the same
+          // whichever way the player moves through the run
+          let dr = beads.map(([u, r, p, sh]) => [u, r, p, sh]).sort((a, b) => a[0] - b[0]), merged = true;
+          while (merged) {
+            merged = false; const out = [];
+            for (const d of dr) {
+              const q = out[out.length - 1];
+              if (q && d[0] - q[0] < 1.05 * (d[1] + q[1])) {
+                const v1 = q[1] ** 3, v2 = d[1] ** 3;
+                q[0] = (q[0] * v1 + d[0] * v2) / (v1 + v2); q[1] = Math.min(rdep * BEAD_X, Math.cbrt(v1 + v2));
+                if (v2 > v1) q[2] = d[2];
+                merged = true;
+              } else out.push(d);
+            }
+            dr = out;
+          }
+          const placed = dr.map(([u, r, , sh]) => [u, r * sh, pts[Math.max(0, Math.min(pts.length - 1, Math.round(u)))]]);
           for (const [u, r, p] of placed) {
             // a cap whose base lies on the glass: sphere of radius r / sin(th) centred inside the glass
             const d = u - Math.round(u), sx = p.x + p.T[0] * d, sy = p.y + p.T[1] * d;
@@ -946,14 +1002,22 @@
     let last = performance.now(), running = false, raf = 0, onScreen = true;
     function frame(now) {
       const dtw = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;   // rAF time can precede start()
+      const SM = NSEG && NSEG.stream, have = p_ => { const a = Math.min(NF - 1, Math.floor(p_)); return SM.ready(a) && SM.ready(Math.min(NF - 1, a + 1)); };
       if (st.playing) {
         // playback pace in simulated seconds per second at 1×, whatever the frame spacing
         const f0_ = Math.min(NF - 2, Math.floor(st.pos)), tf = meta.frames[f0_].t;
         const pace = tf < 1200 ? 24 : tf < 3600 ? 48 : tf < 5400 ? 96 : 480;   // slower while the ice lasts
-        st.pos += dtw * st.speed * pace / Math.max(1e-6, meta.frames[f0_ + 1].t - tf);
+        const next = Math.min(NF - 1, st.pos + dtw * st.speed * pace / Math.max(1e-6, meta.frames[f0_ + 1].t - tf));
+        if (!SM || have(next)) st.pos = next;                            // streamed: wait for the data
         if (st.pos >= NF - 1) { st.pos = NF - 1; st.playing = false; el('ck-play').textContent = 'Replay'; }
       }
       const [f0, f1, w] = frameAt(st.pos);
+      if (SM) {
+        // the chunks here and the next two ahead; until this frame's data is in, keep the last picture
+        SM.load(f0); SM.load(f1); SM.load(f1 + SM.CHK); SM.load(f1 + 2 * SM.CHK);
+        const ok = have(st.pos); el('ck-buffer').hidden = ok;
+        if (!ok) { drawChart(); if (running) raf = requestAnimationFrame(frame); return; }
+      }
 
       if (!FM) updateDrops(f0, f1, w, dtw);
       draw(); drawParticles(f0, f1, w);

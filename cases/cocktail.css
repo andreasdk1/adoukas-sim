@@ -9,7 +9,8 @@
 .ck-stage { position: relative; width: 100%; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 1px solid var(--night-line);
   background: radial-gradient(120% 90% at 50% 30%, #121c3a, #080e1e 70%); }
 .ck-stage canvas { position: absolute; inset: 0; }
-.ck-status[hidden] { display: none; }
+.ck-status[hidden], .ck-buffer[hidden] { display: none; }
+.ck-buffer { position: absolute; top: 10px; right: 12px; margin: 0; font: 400 12px var(--mono); color: var(--on-night-2); }
 .ck-status { position: absolute; inset: 0; display: grid; place-items: center; font: 400 13px var(--mono); color: var(--on-night-2); }
 .ck-legend { margin-top: 12px; }
 .seg { display: inline-flex; border: 1px solid var(--night-line); border-radius: 999px; padding: 3px; background: rgba(17,27,54,.6); }
