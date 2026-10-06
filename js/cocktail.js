@@ -18,13 +18,53 @@
     return g.getImageData(0, 0, img.width, img.height).data;
   }
 
-  Promise.all([fetch(BASE + 'meta.json').then(r => r.json()), loadImg(BASE + 'fields.png'), loadImg(BASE + 'vel.png'), loadImg(BASE + 'material.png'), loadImg(BASE + 'ice.png'), loadImg(BASE + 'vela.png'),
-               loadImg(BASE + 'vap.png').catch(() => null)])
-    .then(([meta, fImg, vImg, mImg, iImg, aImg, pImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg), pixels(iImg), iImg.width, pixels(aImg), pImg && pixels(pImg)))
-    .catch(() => { el('ck-status').textContent = 'Could not load the simulation data.'; });
+  fetch(BASE + 'meta.json').then(r => r.json())
+    .then(meta => meta.native ? loadNative(meta) : Promise.all([loadImg(BASE + 'fields.png'), loadImg(BASE + 'vel.png'), loadImg(BASE + 'material.png'),
+                                                                loadImg(BASE + 'ice.png'), loadImg(BASE + 'vela.png'), loadImg(BASE + 'vap.png').catch(() => null)])
+      .then(([fImg, vImg, mImg, iImg, aImg, pImg]) => init(meta, pixels(fImg), pixels(vImg), pixels(mImg), pixels(iImg), iImg.width, pixels(aImg), pImg && pixels(pImg), null)))
+    .catch(e => { console.error(e); el('ck-status').textContent = 'Could not load the simulation data.'; });
 
-  function init(meta, F, V, Mt, ICEPX, ICEWA, VA, VP) {
-    const NX = meta.nx, NY = meta.ny, NF = meta.frames.length, CELL = meta.cell_mm;
+  // ---------------------------------------------------- data on the solver's own mesh
+  // Runs that carry native/ keep every frame as the solver held it: glass and drink cells on the fluid
+  // grid, the room air one value per quadtree leaf, the ice on its 0.25 mm cells. Each stretch of the run
+  // between restarts (grid switch, level steps) has its own mesh. Frames are decoded on demand onto the
+  // finest grid of the run: the air is rebuilt with the solver's own interpolation between the leaves.
+  async function loadNative(meta) {
+    const NB = BASE + 'native/', NM = meta.native;
+    const TYPED = { uint8: Uint8Array, int32: Int32Array, float32: Float32Array };
+    const segs = await Promise.all(NM.segments.filter(sg => sg.n > 0).map(async sg => {
+      const [mj, bin, ...imgs] = await Promise.all([
+        fetch(NB + `seg${sg.seg}_mesh.json`).then(r => r.json()), fetch(NB + `seg${sg.seg}_mesh.bin`).then(r => r.arrayBuffer()),
+        ...['fields', 'vel', 'vela', 'vap'].map(n => loadImg(NB + `seg${sg.seg}_${n}.png`))]);
+      const arr = n => { const a = mj.arrays[n]; return new TYPED[a.dtype](bin, a.offset, a.length); };
+      const ns = mj.solid_cells, L = ns + mj.leaves, bw = mj.block_w, bh = mj.block_h, cols = sg.cols;
+      // the frames' values, channel by channel (frame g, entry i at g * L + i)
+      const take = (img, chans) => {
+        const px = pixels(img), AW = img.width, out = chans.map(() => new Uint8Array(sg.n * L));
+        for (let g = 0; g < sg.n; g++) {
+          const r0 = ((g / cols) | 0) * bh, c0 = (g % cols) * bw;
+          for (let i = 0; i < L; i++) {
+            const o = ((r0 + ((i / bw) | 0)) * AW + c0 + (i % bw)) * 4;
+            for (let q = 0; q < chans.length; q++) out[q][g * L + i] = px[o + chans[q]];
+          }
+        }
+        return out;
+      };
+      const [T, A, FS] = take(imgs[0], [0, 1, 2]), [U, V] = take(imgs[1], [0, 1]), [AU, AV] = take(imgs[2], [0, 1]);
+      const [EV, WV, FILM] = take(imgs[3], [0, 1, 2]);
+      return { ...sg, nx: mj.nx, ny: mj.ny, dx: mj.dx_mm, ns, L, nq: mj.leaves, mat: arr('material'),
+               airCells: arr('air_cells'), airLeaf: arr('air_leaf'), ip: arr('prolong_indptr'), il: arr('prolong_leaf'), iw: arr('prolong_w'),
+               ch: { T, A, FS, U, V, AU, AV, EV, WV, FILM } };
+    }));
+    const iImg = await loadImg(NB + 'ice.png');
+    init(meta, null, null, null, pixels(iImg), iImg.width, null, true, segs);
+  }
+
+  function init(meta, F, V, Mt, ICEPX, ICEWA, VA, VP, NSEG) {
+    // native data: the finest grid of the run (the fluid grid while the ice lasts)
+    const S0 = NSEG && NSEG.reduce((a, b) => (b.dx < a.dx ? b : a));
+    const NX = S0 ? S0.nx : meta.nx, NY = S0 ? S0.ny : meta.ny, NF = meta.frames.length, CELL = S0 ? S0.dx : meta.cell_mm;
+    const ETA_CELL = meta.cell_mm;                                           // the surface heights' columns
     const WMM = NX * CELL, HMM = NY * CELL;
     // the table under the glass: the simulated box ends on its surface (the glass stands on it); shown
     // as a slab below the box, so the stage keeps its proportions (older runs: none)
@@ -32,31 +72,105 @@
     const [TLO, THI] = meta.T_range, ABVHI = meta.abv_range[1], VMAX = meta.v_max;
     const TROOM = meta.T_room, TDEW = meta.T_dew, Gm = meta.geometry;
     // frames are tiles of an atlas (CA columns; older data: one tall strip, CA = 1)
-    const CA = meta.atlas_cols || 1, CAI = meta.ice_atlas_cols || 1, NXA = NX * CA;
+    const CA = meta.atlas_cols || 1, CAI = (NSEG ? meta.native.ice_atlas_cols : meta.ice_atlas_cols) || 1, NXA = NX * CA;
     const ICEW = ICEWA / CAI;
     const iat = (fr, nC, r, c) => ((((fr / CAI) | 0) * nC + r) * ICEWA + (fr % CAI) * ICEW + c) * 4;
     const at = (f, k) => ((((f / CA) | 0) * NY + ((k / NX) | 0)) * NXA + (f % CA) * NX + (k % NX)) * 4;
 
-    // material per data cell (row 0 = top): 0 air, 1 glass, 2 liquid
-    const mat = new Uint8Array(NX * NY);
-    for (let k = 0; k < NX * NY; k++) mat[k] = Math.round(Mt[k * 4] / 100);
+    // material per data cell (row 0 = top): 0 air, 1 glass, 2 liquid (native data: per segment)
+    let mat = new Uint8Array(NX * NY);
+    if (Mt) for (let k = 0; k < NX * NY; k++) mat[k] = Math.round(Mt[k * 4] / 100);
+
+    // native frames, decoded onto the NX x NY grid (r = 0 at the top): each segment's cells map onto it
+    let segOf = null, fd = null, segNow = null;
+    if (NSEG) {
+      for (const sg of NSEG) {
+        const solidIdx = new Int32Array(sg.nx * sg.ny).fill(-1), airIdx = new Int32Array(sg.nx * sg.ny).fill(-1);
+        let n = 0;
+        for (let k = 0; k < sg.nx * sg.ny; k++) if (sg.mat[k] !== 0) solidIdx[k] = n++;
+        sg.airCells.forEach((k, a) => { airIdx[k] = a; });
+        // each display cell: bilinear between the segment's four nearest cells of the same material
+        // (one cell when the grids coincide), so a coarser segment shows no blocks
+        sg.fineMat = new Uint8Array(NX * NY); sg.fsrc = new Int32Array(NX * NY * 4).fill(-1); sg.fw = new Float32Array(NX * NY * 4);
+        for (let r = 0; r < NY; r++) for (let c = 0; c < NX; c++) {
+          const kf = r * NX + c, xm = (c + 0.5) * CELL, ym = (NY - 1 - r + 0.5) * CELL;
+          const near = Math.min(sg.ny - 1, (ym / sg.dx) | 0) * sg.nx + Math.min(sg.nx - 1, (xm / sg.dx) | 0), m0 = sg.mat[near];
+          sg.fineMat[kf] = m0;
+          const u = xm / sg.dx - 0.5, v = ym / sg.dx - 0.5, i0 = Math.floor(u), j0 = Math.floor(v), tx = u - i0, ty = v - j0;
+          let n = 0, wsum = 0;
+          for (const [di, dj, wt] of [[0, 0, (1 - tx) * (1 - ty)], [1, 0, tx * (1 - ty)], [0, 1, (1 - tx) * ty], [1, 1, tx * ty]]) {
+            const i = Math.min(sg.nx - 1, Math.max(0, i0 + di)), j = Math.min(sg.ny - 1, Math.max(0, j0 + dj)), ks = j * sg.nx + i;
+            if (wt <= 1e-6 || sg.mat[ks] !== m0) continue;
+            sg.fsrc[kf * 4 + n] = ks; sg.fw[kf * 4 + n] = wt; n++; wsum += wt;
+          }
+          if (!n) { sg.fsrc[kf * 4] = near; sg.fw[kf * 4] = 1; } else for (let q = 0; q < n; q++) sg.fw[kf * 4 + q] /= wsum;
+        }
+        sg.solidIdx = solidIdx; sg.airIdx = airIdx;
+        sg.leafN = new Float32Array(sg.nq); for (const l of sg.airLeaf) sg.leafN[l]++;
+      }
+      segOf = f => NSEG.find(sg => f >= sg.first && f < sg.first + sg.n) || NSEG[NSEG.length - 1];
+      // the solver's prolongation: linear between the leaves, then shifted so each leaf keeps its value
+      const prolong = (sg, C, base) => {
+        const na = sg.airCells.length, y = new Float32Array(na), mean = new Float32Array(sg.nq), x0 = base + sg.ns;
+        for (let a = 0; a < na; a++) { let v = 0; for (let j = sg.ip[a]; j < sg.ip[a + 1]; j++) v += sg.iw[j] * C[x0 + sg.il[j]]; y[a] = v; mean[sg.airLeaf[a]] += v; }
+        for (let l = 0; l < sg.nq; l++) mean[l] = C[x0 + l] - mean[l] / Math.max(1, sg.leafN[l]);
+        for (let a = 0; a < na; a++) y[a] += mean[sg.airLeaf[a]];
+        return y;
+      };
+      const decode = f => {
+        const sg = segOf(f), base = (f - sg.first) * sg.L, ch = sg.ch, nc = sg.nx * sg.ny;
+        const air = { T: prolong(sg, ch.T, base), AU: prolong(sg, ch.AU, base), AV: prolong(sg, ch.AV, base),
+                      EV: prolong(sg, ch.EV, base), WV: prolong(sg, ch.WV, base) };
+        // values on the segment's own cells (8-bit scale), channel by channel; zero velocity is 127.5
+        const vals = {};
+        for (const name of ['T', 'A', 'FS', 'U', 'V', 'AU', 'AV', 'EV', 'WV', 'FILM']) {
+          const a = new Float32Array(nc), C = ch[name], A_ = air[name];
+          const zero = (name === 'U' || name === 'V' || name === 'AU' || name === 'AV' || name === 'WV') ? 127.5 : 0;
+          for (let k = 0; k < nc; k++) {
+            const si = sg.solidIdx[k];
+            if (si >= 0) a[k] = name in air && name !== 'T' ? zero : C[base + si];
+            else { const ai = sg.airIdx[k]; a[k] = ai >= 0 && A_ ? A_[ai] : zero; }
+          }
+          vals[name] = a;
+        }
+        const N = NX * NY, D = { F: new Uint8ClampedArray(N * 4), V: new Uint8ClampedArray(N * 4), VA: new Uint8ClampedArray(N * 4), VP: new Uint8ClampedArray(N * 4) };
+        const put = (dst, o, a, k) => { let v = 0; for (let q = 0; q < 4; q++) { const ks = sg.fsrc[k * 4 + q]; if (ks < 0) break; v += sg.fw[k * 4 + q] * a[ks]; } dst[o] = v; };
+        for (let k = 0; k < N; k++) {
+          const o = k * 4;
+          put(D.F, o, vals.T, k); put(D.F, o + 1, vals.A, k); put(D.F, o + 2, vals.FS, k);
+          put(D.V, o, vals.U, k); put(D.V, o + 1, vals.V, k); put(D.VA, o, vals.AU, k); put(D.VA, o + 1, vals.AV, k);
+          put(D.VP, o, vals.EV, k); put(D.VP, o + 1, vals.WV, k); put(D.VP, o + 2, vals.FILM, k);
+        }
+        return D;
+      };
+      const cache = new Map();
+      fd = f => {
+        let D = cache.get(f);
+        if (!D) { D = decode(f); cache.set(f, D); if (cache.size > 6) cache.delete(cache.keys().next().value); }
+        return D;
+      };
+    }
+    if (NSEG) { segNow = segOf(0); mat = segNow.fineMat; Gm.fill_y = segNow.fill_y; }
+    // the last two frames asked for, without a map lookup (the draw loops ask per cell)
+    let fA = -1, dA = null, fB = -1, dB = null;
+    const fr_ = f => (f === fA ? dA : f === fB ? dB : (fB = fA, dB = dA, fA = f, dA = fd(f)));
 
     // decoded field access, frame f, data cell (c, r) with r=0 at top
-    const Tof = (f, k) => TLO + F[at(f, k)] / 255 * (THI - TLO);
-    const ABVof = (f, k) => F[at(f, k) + 1] / 255 * ABVHI;
-    const FSof = (f, k) => F[at(f, k) + 2] / 255;
-    const Uof = (f, k) => (V[at(f, k)] / 255 * 2 - 1) * VMAX;
-    const Vof = (f, k) => (V[at(f, k) + 1] / 255 * 2 - 1) * VMAX;
+    const Tof = NSEG ? (f, k) => TLO + fr_(f).F[k * 4] / 255 * (THI - TLO) : (f, k) => TLO + F[at(f, k)] / 255 * (THI - TLO);
+    const ABVof = NSEG ? (f, k) => fr_(f).F[k * 4 + 1] / 255 * ABVHI : (f, k) => F[at(f, k) + 1] / 255 * ABVHI;
+    const FSof = NSEG ? (f, k) => fr_(f).F[k * 4 + 2] / 255 : (f, k) => F[at(f, k) + 2] / 255;
+    const Uof = NSEG ? (f, k) => (fr_(f).V[k * 4] / 255 * 2 - 1) * VMAX : (f, k) => (V[at(f, k)] / 255 * 2 - 1) * VMAX;
+    const Vof = NSEG ? (f, k) => (fr_(f).V[k * 4 + 1] / 255 * 2 - 1) * VMAX : (f, k) => (V[at(f, k) + 1] / 255 * 2 - 1) * VMAX;
     const VMAXA = meta.v_max_air || 0.15;                                    // air velocity, from the simulation
-    const AUof = (f, k) => (VA[at(f, k)] / 255 * 2 - 1) * VMAXA;
-    const AVof = (f, k) => (VA[at(f, k) + 1] / 255 * 2 - 1) * VMAXA;
+    const AUof = NSEG ? (f, k) => (fr_(f).VA[k * 4] / 255 * 2 - 1) * VMAXA : (f, k) => (VA[at(f, k)] / 255 * 2 - 1) * VMAXA;
+    const AVof = NSEG ? (f, k) => (fr_(f).VA[k * 4 + 1] / 255 * 2 - 1) * VMAXA : (f, k) => (VA[at(f, k) + 1] / 255 * 2 - 1) * VMAXA;
     // alcohol vapour in the air (kg per kg), from runs with evaporation; without it the view is hidden
     const EMAX = meta.vap_e_max || 0.04;
-    const EVof = (f, k) => VP ? VP[at(f, k)] / 255 * EMAX : 0;
+    const EVof = NSEG ? (f, k) => fr_(f).VP[k * 4] / 255 * EMAX : (f, k) => VP ? VP[at(f, k)] / 255 * EMAX : 0;
     if (!VP) { el('ck-view-evap').style.display = 'none'; el('ck-evap-row').style.display = 'none'; }
     // water on the glass (µm of film, thickest in each cell), from runs that track the condensate
     const HAS_FILM = !!VP && meta.frames[0].film_ul !== undefined;
-    const FILMof = (f, k) => VP[at(f, k) + 2];
+    const FILMof = NSEG ? (f, k) => fr_(f).VP[k * 4 + 2] : (f, k) => VP[at(f, k) + 2];
 
     // ------------------------------------------------------------ view state
     const st = { pos: 0, playing: true, speed: 0.25, view: 'temp' };
@@ -211,14 +325,19 @@
     // --------------------------------------------------------- particles
     const PL = Array.from({ length: 260 }, () => ({ x: 0, y: 0, life: 0 }));
     const PA = Array.from({ length: 420 }, () => ({ x: 0, y: 0, life: 0 }));
-    const liquidCells = []; for (let k = 0; k < NX * NY; k++) if (mat[k] === 2) liquidCells.push(k);
+    let liquidCells = [], airCells = [];
+    function cellLists() {
+      liquidCells = []; airCells = [];
+      for (let k = 0; k < NX * NY; k++) { if (mat[k] === 2) liquidCells.push(k); else if (mat[k] === 0) airCells.push(k); }
+    }
+    cellLists();
     function spawnL(p) { const k = liquidCells[(Math.random() * liquidCells.length) | 0]; p.x = (k % NX) + Math.random(); p.y = ((k / NX) | 0) + Math.random(); p.life = 40 + Math.random() * 80; }
-    const airCells = []; for (let k = 0; k < NX * NY; k++) if (mat[k] === 0) airCells.push(k);
     function spawnA(p) { const k = airCells[(Math.random() * airCells.length) | 0]; p.x = (k % NX) + Math.random(); p.y = ((k / NX) | 0) + Math.random(); p.life = 60 + Math.random() * 160; }
     PL.forEach(spawnL); PA.forEach(spawnA);
 
-    // ABV in the top and bottom 15 mm of the drink, liquid cells only (not ice)
-    meta.frames.forEach((fr, f) => {
+    // ABV in the top and bottom 15 mm of the drink, liquid cells only (not ice); native runs carry the
+    // same numbers from the simulation (decoding every frame here would hold up the start)
+    if (!NSEG) meta.frames.forEach((fr, f) => {
       let ts = 0, tn = 0, bs = 0, bn = 0, as = 0, an = 0;
       for (let k = 0; k < NX * NY; k++) {
         if (mat[k] !== 2 || FSof(f, k) > 0.02) continue;
@@ -234,6 +353,10 @@
     function frameAt(pos) { pos = Math.max(0, pos); const f0 = Math.min(NF - 1, Math.floor(pos)); return [f0, Math.min(NF - 1, f0 + 1), pos - f0]; }
     function draw() {
       const [f0, f1, w] = frameAt(st.pos);
+      if (NSEG) {                                        // the mesh of the nearer frame's segment
+        const sg = segOf(w < 0.5 ? f0 : f1);
+        if (sg !== segNow) { segNow = sg; mat = sg.fineMat; Gm.fill_y = sg.fill_y; topRows(); cellLists(); }
+      }
       const d = img.data;
       for (let r = 0; r < NY; r++) for (let c = 0; c < NX; c++) {
         const k = r * NX + c, o = k * 4, m = mat[k];
@@ -340,8 +463,13 @@
       return (SIG_V[i] + (SIG_V[i + 1] - SIG_V[i]) * f) * 1e-3;
     }
     const topRow = new Int16Array(NX).fill(-1);
-    for (let c = 0; c < NX; c++) for (let r = 0; r < NY; r++) if (mat[r * NX + c] === 2) { topRow[c] = r; break; }
-    const ROW_TOP = Math.min(...Array.from(topRow).filter(r => r >= 0));
+    let ROW_TOP = 0;
+    function topRows() {
+      topRow.fill(-1);
+      for (let c = 0; c < NX; c++) for (let r = 0; r < NY; r++) if (mat[r * NX + c] === 2) { topRow[c] = r; break; }
+      ROW_TOP = Math.min(...Array.from(topRow).filter(r => r >= 0));
+    }
+    topRows();
     // Pose of ice body ib between two stored frames: centre and angle interpolated, then pushed
     // back out of the glass if needed. A piece rolling along the wall between frames would
     // otherwise be drawn partly inside it, which the simulation never allows.
@@ -411,7 +539,7 @@
       const e0 = meta.frames[f0].eta_um, e1 = meta.frames[f1].eta_um;
       const eta = x => {
         if (!e0) return 0;
-        const u = Math.min(e0.length - 1.001, Math.max(0, x / CELL - 0.5)), i = Math.floor(u), t = u - i;
+        const u = Math.min(e0.length - 1.001, Math.max(0, x / ETA_CELL - 0.5)), i = Math.floor(u), t = u - i;
         const a = e0[i] * (1 - t) + e0[i + 1] * t, b = e1[i] * (1 - t) + e1[i + 1] * t;
         return (a * (1 - w) + b * w) * 1e-3 * SURF_EXAG;                                 // mm
       };
@@ -490,7 +618,7 @@
       }
     }
     // Ice cubes: rigid bodies drawn from their own stored shape, position and angle
-    const IB = meta.ice_bodies || [];
+    const IB = (NSEG ? meta.native.ice_bodies : meta.ice_bodies) || [];
     const iceCv = IB.map(b => { const c = document.createElement('canvas'); c.width = b.cells; c.height = b.cells; return c; });
     function drawIce(f0, f1, w) {
       const fr = w < 0.5 ? f0 : f1;                     // shape from the nearest frame
@@ -618,7 +746,7 @@
       px.globalCompositeOperation = 'destination-out';
       px.fillStyle = 'rgba(0,0,0,0.12)'; px.fillRect(0, 0, W, H);
       px.globalCompositeOperation = 'source-over';
-      const cs = CELL * sc;
+      const cs = CELL * sc, PSTEP = 1.5 / CELL;           // streaks step in mm (as on the 1.5 mm grid)
       // liquid (time-lapse direction of the stored flow)
       px.strokeStyle = st.view === 'flow' ? 'rgba(170,215,255,0.9)' : 'rgba(255,255,255,0.45)';
       px.lineWidth = st.view === 'flow' ? 1.2 : 0.9;
@@ -627,7 +755,7 @@
         const k = Math.min(NY - 1, p.y | 0) * NX + Math.min(NX - 1, p.x | 0);
         if (mat[k] !== 2 || FSof(f0, k) > 0.5 || --p.life < 0) { spawnL(p); continue; }
         const uu = Uof(f0, k) * (1 - w) + Uof(f1, k) * w, vv = Vof(f0, k) * (1 - w) + Vof(f1, k) * w;
-        const x2 = p.x + uu / VMAX * 0.9, y2 = p.y - vv / VMAX * 0.9;
+        const x2 = p.x + uu / VMAX * 0.9 * PSTEP, y2 = p.y - vv / VMAX * 0.9 * PSTEP;
         px.moveTo(p.x * cs, p.y * cs); px.lineTo(x2 * cs, y2 * cs);
         p.x = x2; p.y = y2;
       }
@@ -639,7 +767,7 @@
         const k = Math.min(NY - 1, p.y | 0) * NX + Math.min(NX - 1, p.x | 0);
         if (mat[k] !== 0 || --p.life < 0) { spawnA(p); continue; }
         const uu = AUof(f0, k) * (1 - w) + AUof(f1, k) * w, vv = AVof(f0, k) * (1 - w) + AVof(f1, k) * w;
-        const x2 = p.x + uu / VMAXA * 1.4, y2 = p.y - vv / VMAXA * 1.4;
+        const x2 = p.x + uu / VMAXA * 1.4 * PSTEP, y2 = p.y - vv / VMAXA * 1.4 * PSTEP;
         px.moveTo(p.x * cs, p.y * cs); px.lineTo(x2 * cs, y2 * cs);
         p.x = x2; p.y = y2;
         if (p.x < 0 || p.y < 0 || p.x >= NX || p.y >= NY) spawnA(p);
