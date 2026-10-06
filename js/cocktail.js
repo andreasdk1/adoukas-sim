@@ -26,6 +26,9 @@
   function init(meta, F, V, Mt, ICEPX, ICEWA, VA, VP) {
     const NX = meta.nx, NY = meta.ny, NF = meta.frames.length, CELL = meta.cell_mm;
     const WMM = NX * CELL, HMM = NY * CELL;
+    // the table under the glass: the simulated box ends on its surface (the glass stands on it); shown
+    // as a slab below the box, so the stage keeps its proportions (older runs: none)
+    const TBL = (meta.geometry && meta.geometry.table_mm) || 0;
     const [TLO, THI] = meta.T_range, ABVHI = meta.abv_range[1], VMAX = meta.v_max;
     const TROOM = meta.T_room, TDEW = meta.T_dew, Gm = meta.geometry;
     // frames are tiles of an atlas (CA columns; older data: one tall strip, CA = 1)
@@ -57,7 +60,7 @@
 
     // ------------------------------------------------------------ view state
     const st = { pos: 0, playing: true, speed: 0.25, view: 'temp' };
-    let W = 0, H = 0, sc = 1;
+    let W = 0, H = 0, HC = 0, sc = 1;
     const DPR = Math.min(window.devicePixelRatio || 1, 2);
     const off = document.createElement('canvas'); off.width = NX; off.height = NY;
     const ox = off.getContext('2d'); const img = ox.createImageData(NX, NY);
@@ -71,11 +74,11 @@
       stage.style.width = '';
       const avail = stage.getBoundingClientRect().width;
       const maxH = Math.max(320, window.innerHeight - 260);
-      W = Math.min(avail, maxH * WMM / HMM); H = W * HMM / WMM;
-      stage.style.width = W + 'px'; stage.style.height = H + 'px';
+      W = Math.min(avail, maxH * WMM / (HMM + TBL)); H = W * HMM / WMM; HC = W * (HMM + TBL) / WMM;
+      stage.style.width = W + 'px'; stage.style.height = HC + 'px';
       for (const c of [cv, cvP]) {
-        c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
-        c.style.width = W + 'px'; c.style.height = H + 'px';
+        c.width = Math.round(W * DPR); c.height = Math.round(HC * DPR);
+        c.style.width = W + 'px'; c.style.height = HC + 'px';
         c.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
       }
       sc = W / WMM;
@@ -309,13 +312,17 @@
       }
       ox.putImageData(img, 0, 0); gx.putImageData(gimg, 0, 0);
       for (let k = 0; k < NX * NY; k++) if (mat[k] !== 1) gd[k * 4 + 3] = 0;   // reset the padding
-      cx.clearRect(0, 0, W, H);
+      cx.clearRect(0, 0, W, HC);
       cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
       cx.drawImage(off, 0, 0, W, H);
       cx.save(); glassPath(); cx.clip('evenodd'); cx.drawImage(goff, 0, 0, W, H); cx.restore();
       drawIce(f0, f1, w);
       drawSurface(f0, f1, w);
       drawGlass();
+      if (TBL) {                                         // the table: a dark slab, its surface a hairline
+        cx.fillStyle = '#0f1626'; cx.fillRect(0, H, W, HC - H);
+        cx.fillStyle = 'rgba(169,192,234,0.28)'; cx.fillRect(0, H, W, 1);
+      }
       if (HAS_FILM) { const [g0, g1, gw] = frameAt(st.pos); drawMist(g0, g1, gw); drawPool(g0, g1, gw); }
       drawDrops();
     }
