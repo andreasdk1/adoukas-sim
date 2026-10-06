@@ -232,7 +232,16 @@
     const FY = Gm.foot_y ?? 15;
     const STEM_TOP = Gm.apex_out + 1, STEM_BOT = FY + 6, STEM_X = 3.2, FOOT_TOP = FY + 4.5, FOOT_X = 36;
     const R_SLIDE = 1.25, GROW = 4.5e-4, DRY = 2.5e-4;                 // mm, mm/(s·K)
-    let drops = [], tPrev = 0;
+    let drops = [], tPrev = 0, slid = 0;
+    // A drop only runs once the simulation runs water off the outside of the glass: each sliding drop
+    // (a cap of radius r, ~2/3 pi r³) is paid for out of the water the run has taken off it so far
+    const runoff = (f0, f1, w) => ((meta.frames[f0].film_to_table_ul || 0) * (1 - w) + (meta.frames[f1].film_to_table_ul || 0) * w);
+    const capV = r => 2 / 3 * Math.PI * r ** 3;
+    function startSlide(d, f0, f1, w) {
+      if (HAS_FILM && runoff(f0, f1, w) - slid < capV(d.r)) { d.r = Math.min(d.r, R_SLIDE); return; }
+      if (HAS_FILM) slid += capV(d.r);
+      d.slide = true;
+    }
     function onWall(d) {                                               // drop centre in mm
       if (d.seg === 0) {
         const y = Gm.rim_y - 2 - d.s * COSA;
@@ -275,7 +284,7 @@
           const T = glassT(d, f0, f1, w);
           d.r += dts * (T < TDEW ? GROW * (TDEW - T) : -DRY * (T - TDEW));
         }
-        if (d.r > R_SLIDE) d.slide = true;
+        if (d.r > R_SLIDE) startSlide(d, f0, f1, w);
       }
       // sliding (real time when animating; instant when fast-forwarding)
       for (const d of drops) {
@@ -297,13 +306,13 @@
         if (Math.abs(a.s - b.s) < (a.r + b.r) * 0.9 && Math.random() < 0.85) {
           const keep = a.slide || (!b.slide && a.r >= b.r) ? a : b, gone = keep === a ? b : a;
           keep.r = Math.cbrt(keep.r ** 3 + gone.r ** 3); gone.r = 0;
-          if (keep.r > R_SLIDE) keep.slide = true;
+          if (keep.r > R_SLIDE && !keep.slide) startSlide(keep, f0, f1, w);
         }
       }
       drops = drops.filter(d => d.r > 0.12);
     }
     function dropsTo(t, f0, f1, w) {                                   // rebuild state after a jump back
-      drops = []; let tt = 0;
+      drops = []; slid = 0; let tt = 0;
       while (tt < t) {
         const dts = Math.min(20, t - tt); tt += dts;
         const [g0, g1, gw] = frameAt(posOfTime(tt));
@@ -712,15 +721,15 @@
         for (let s = 0, n = 0; s <= L; s += 0.45, n++) {
           const h = wallFilm({ side, seg, s, r: 0 }, f0, f1, w);
           const [xm, ym] = onWall({ side, seg, s, r: 0 });
-          // frost: the glass turns milky as the first micrometres condense
+          // fog: the glass turns milky as the water condenses (faint at a few µm, a clear haze by ~40 µm)
           if (prev && h > 0.3) {
-            cx.strokeStyle = `rgba(226,238,255,${Math.min(0.55, 0.12 + h / 12)})`; cx.lineWidth = Math.max(1, 0.55 * sc);
+            cx.strokeStyle = `rgba(226,238,255,${0.04 + 0.16 * Math.min(1, h / 40)})`; cx.lineWidth = Math.max(1, 0.55 * sc);
             cx.beginPath(); cx.moveTo(X(prev[0] + side * 0.2), Y(prev[1])); cx.lineTo(X(xm + side * 0.2), Y(ym)); cx.stroke();
           }
           prev = [xm, ym];
           if (h < 1) continue;
-          const nd = Math.min(5, Math.ceil(h / 2.5));
-          cx.fillStyle = 'rgba(232,242,255,0.6)';
+          const nd = Math.min(3, Math.ceil(h / 10));
+          cx.fillStyle = 'rgba(232,242,255,0.35)';
           for (let q = 0; q < nd; q++) {
             const a = hash(n * 7 + q, side * 3 + seg), b = hash(q * 13 + n, seg - side);
             const [dx_, dy_] = onWall({ side, seg, s: s + (a - 0.5) * 0.4, r: 0 });
