@@ -246,7 +246,7 @@
     // alcohol vapour in the air (kg per kg), from runs with evaporation; without it the view is hidden
     const EMAX = meta.vap_e_max || 0.04;
     const EVof = NSEG ? (f, k) => fr_(f).VP[k * 4] / 255 * EMAX : (f, k) => VP ? VP[at(f, k)] / 255 * EMAX : 0;
-    if (!VP) { el('ck-view-evap').style.display = 'none'; el('ck-evap-row').style.display = 'none'; }
+    if (!VP) { el('ck-view-evap').style.display = 'none'; el('ck-evap-row').style.display = 'none'; el('ck-level-row').style.display = 'none'; }
     // water on the glass (µm of film, thickest in each cell), from runs that track the condensate
     const HAS_FILM = !!VP && meta.frames[0].film_ul !== undefined;
     // runs with the drop model carry the water on the glass on a square-root scale (µm) and the water
@@ -1001,11 +1001,16 @@
       el('ck-drink').textContent = lerpStat('T_drink').toFixed(1) + ' °C';
       el('ck-ice').textContent = Math.max(0, lerpStat('ice') * 100).toFixed(0) + ' %';
       el('ck-abv').textContent = `${(lerpStat('abv_top') * 100).toFixed(0)} % / ${(lerpStat('abv_bot') * 100).toFixed(0)} %`;
-      const wet = lerpStat('wet');
-      el('ck-dew').textContent = wet > 0.02 ? `wet · ${Math.round(wet * 100)} %` : 'dry';
+      // water on the glass: how much, and whether the glass is still below the dew point (forming) or not (drying)
+      const wet = lerpStat('wet'), film = meta.frames[0].film_ul !== undefined ? lerpStat('film_ul') : null;
+      if (film === null) el('ck-dew').textContent = wet > 0.02 ? `wet · ${Math.round(wet * 100)} %` : 'dry';
+      else if (film < 1 && wet <= 0.02) el('ck-dew').textContent = 'dry';
+      else el('ck-dew').textContent = `${film < 100 ? Math.round(film) + ' µL' : (film / 1000).toFixed(2) + ' mL'} · ${wet > 0.02 ? 'forming' : 'drying'}`;
       if (VP && meta.frames[0].evap_pct !== undefined) {
         const v = lerpStat('evap_pct'), a = lerpStat('ethanol_lost_pct'), lv = lerpStat('level_drop_mm');
-        el('ck-evap').textContent = `${v.toFixed(v < 1 ? 2 : 1)} % of the drink · ${a.toFixed(a < 1 ? 2 : 1)} % of its alcohol · level −${lv < 1 ? Math.round(lv * 1000) + ' µm' : lv.toFixed(2) + ' mm'}`;
+        const pc = x => x.toFixed(x < 1 ? 2 : 1) + ' %';
+        el('ck-evap').textContent = `${pc(v)} / ${pc(a)}`;
+        el('ck-level').textContent = `−${lv.toFixed(lv < 0.1 ? 3 : 2)} mm`;
       }
       el('ck-scrub').value = st.pos;
     }
