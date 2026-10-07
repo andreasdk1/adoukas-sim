@@ -18,7 +18,7 @@
 .seg span { display: block; padding: 7px 14px; border-radius: 999px; font-size: 13.5px; color: var(--on-night-2); cursor: pointer; transition: background .2s, color .2s; }
 .seg input:checked + span { background: var(--blue); color: #fff; }
 .seg input:focus-visible + span { outline: 2px solid var(--blue-2); outline-offset: 2px; }
-.seg-sm span { padding: 5px 9px; font: 500 12.5px var(--mono); }
+.seg-sm span { padding: 5px 8px; font: 500 12.5px var(--mono); }
 .lg { display: flex; align-items: center; gap: 10px; font: 400 11.5px var(--mono); color: var(--on-night-2); flex-wrap: wrap; }
 .lg[hidden] { display: none; }
 .lg em { font-style: normal; opacity: .85; }
@@ -32,6 +32,7 @@
 .ck-clock { font: 400 13px var(--mono); color: var(--on-night-2); }
 .ck-clock b { font: 400 34px/1.1 var(--serif); color: #fff; margin-left: 4px; }
 .ck-transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
+#ck-play { width: 40px; height: 40px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 #ck-scrub { width: 100%; accent-color: var(--blue-2); }
 .ck-read div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--night-line); }
 .ck-read dt { font-size: 13.5px; color: var(--on-night-2); }

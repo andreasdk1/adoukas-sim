@@ -1070,7 +1070,7 @@
         }
         const next = Math.min(NF - 1, st.pos + dtw * st.speed * pace / gap);
         if (!SM || have(next)) st.pos = next;                            // streamed: wait for the data
-        if (st.pos >= NF - 1) { st.pos = NF - 1; st.playing = false; el('ck-play').textContent = 'Replay'; }
+        if (st.pos >= NF - 1) { st.pos = NF - 1; st.playing = false; playIcon('replay'); }
       } else if (SM) LV = 0;                                             // paused: every frame
       const [f0, f1, w] = frameAt(st.pos);
       if (SM) {
@@ -1093,18 +1093,26 @@
 
     // ------------------------------------------------------------ controls
     const scrub = el('ck-scrub'); scrub.max = NF - 1; scrub.step = 0.01;
-    scrub.addEventListener('input', () => { st.pos = +scrub.value; if (st.pos < NF - 1) el('ck-play').textContent = st.playing ? 'Pause' : 'Play'; });
+    scrub.addEventListener('input', () => { st.pos = +scrub.value; if (st.pos < NF - 1) playIcon(st.playing ? 'pause' : 'play'); });
     // click or drag on the chart: go to that point (same axis as the scrub bar)
     function chartSeek(e) {
       const r = chart.getBoundingClientRect(), pad = 6;
       st.pos = Math.max(0, Math.min(1, (e.clientX - r.left - pad) / (r.width - 2 * pad))) * (NF - 1);
-      if (st.pos < NF - 1) el('ck-play').textContent = st.playing ? 'Pause' : 'Play';
+      if (st.pos < NF - 1) playIcon(st.playing ? 'pause' : 'play');
     }
     chart.addEventListener('pointerdown', e => { chart.setPointerCapture(e.pointerId); chartSeek(e); });
     chart.addEventListener('pointermove', e => { if (chart.hasPointerCapture(e.pointerId)) chartSeek(e); });
+    // the play button as an icon (play / pause / replay), so the speeds fit beside it
+    function playIcon(k) {
+      const b = el('ck-play'), d = { play: 'M8 5.5v13l11-6.5z', pause: 'M7 5h3.6v14H7zM13.4 5H17v14h-3.6z',
+        replay: 'M12 5a7 7 0 1 1-6.6 4.7l1.9.6A5 5 0 1 0 12 7v3L7.5 6 12 2z' }[k];
+      b.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="${d}"/></svg>`;
+      b.setAttribute('aria-label', k[0].toUpperCase() + k.slice(1)); b.title = b.getAttribute('aria-label');
+    }
+    playIcon(st.playing ? 'pause' : 'play');
     el('ck-play').addEventListener('click', () => {
       if (st.pos >= NF - 1) st.pos = 0;
-      st.playing = !st.playing; el('ck-play').textContent = st.playing ? 'Pause' : 'Play';
+      st.playing = !st.playing; playIcon(st.playing ? 'pause' : 'play');
     });
     document.querySelectorAll('input[name="ck-view"]').forEach(r => r.addEventListener('change', e => {
       st.view = e.target.value; px.clearRect(0, 0, W, H);
