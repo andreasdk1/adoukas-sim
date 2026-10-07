@@ -1012,15 +1012,46 @@
         el('ck-evap').textContent = `${pc(v)} / ${pc(a)}`;
         el('ck-level').textContent = `−${lv.toFixed(lv < 0.1 ? 3 : 2)} mm`;
       }
-      el('ck-scrub').value = st.pos;
+      el('ck-scrub').value = posToU(st.pos);
     }
-    // small chart: drink temperature and ice remaining vs time
+    // the time axis of the scrub bar and the chart: frame by frame, but when the frames are dense while the
+    // ice melts (most of them), that stretch gets a set share of the width and the rest of the run the remainder
+    const FD = (() => {
+      const fr = meta.frames; let k = 1;
+      while (k < NF && fr[k].t - fr[k - 1].t < 1) k++;
+      return k - 1 > 0.6 * NF ? k - 1 : 0;                              // last frame of the dense stretch
+    })(), UD = 0.55;
+    // (after it, linear in time: the frames there are 10 s, then 1 and 5 min apart)
+    const TD = meta.frames[FD].t, TE = meta.frames[NF - 1].t;
+    function posToU(f) {
+      if (!FD) return f / (NF - 1);
+      if (f <= FD) return UD * f / FD;
+      const i = Math.min(NF - 2, Math.floor(f)), t = meta.frames[i].t + (f - i) * (meta.frames[i + 1].t - meta.frames[i].t);
+      return UD + (1 - UD) * (t - TD) / (TE - TD);
+    }
+    function uToPos(u) {
+      u = Math.max(0, Math.min(1, u));
+      if (!FD) return u * (NF - 1);
+      return u <= UD ? u / UD * FD : Math.max(FD, timeToPos(TD + (u - UD) / (1 - UD) * (TE - TD)) ?? NF - 1);
+    }
+    window.__ckPosToU = posToU;
+    // the bottom 15 mm is a small volume whose alcohol content jumps as meltwater arrives: the chart's
+    // top/bottom ratio is averaged over 30 s
+    const RATIO = meta.frames[0].abv_tb === undefined ? null : (() => {
+      const fr = meta.frames, out = new Array(NF).fill(null); let a = 0, b = 0, sum = 0, n = 0;
+      for (let f = 0; f < NF; f++) {
+        while (b < NF && fr[b].t <= fr[f].t + 15) { if (fr[b].abv_tb != null) { sum += fr[b].abv_tb; n++; } b++; }
+        while (fr[a].t < fr[f].t - 15) { if (fr[a].abv_tb != null) { sum -= fr[a].abv_tb; n--; } a++; }
+        out[f] = n ? sum / n : null;
+      }
+      return out;
+    })();                                          // for the screenshot scripts
+    // small chart: drink temperature, ice remaining and the alcohol layering vs time
     function drawChart() {
-      // x: frame by frame, like the scrub bar (the frames are dense while the ice melts, so that stretch
-      // gets most of the width); marks at round times
+      // x: the scrub bar's axis; marks at round times
       const w = chart.width / DPR, h = chart.height / DPR, pad = 6;
       chx.clearRect(0, 0, w, h);
-      const xf = f => pad + (f / (NF - 1)) * (w - 2 * pad);
+      const xf = f => pad + posToU(f) * (w - 2 * pad);
       const yT = T => h - pad - ((T - TMIN) / (TMAX - TMIN)) * (h - 2 * pad);
       const yI = f => h - pad - f * (h - 2 * pad);
       chx.strokeStyle = 'rgba(169,192,234,0.15)'; chx.lineWidth = 1;
@@ -1029,7 +1060,7 @@
       let lastX = -1e9;
       for (const tm of [60, 120, 300, 600, 900, 1800, 2700, 3600, 5400, 7200, 10800]) {
         const fm = timeToPos(tm); if (fm == null) continue;
-        const x = xf(fm); if (x - lastX < 26) continue; lastX = x;
+        const x = xf(fm); if (x - lastX < 32) continue; lastX = x;
         chx.strokeStyle = 'rgba(169,192,234,0.12)'; chx.beginPath(); chx.moveTo(x, pad); chx.lineTo(x, h - pad - 9); chx.stroke();
         chx.fillText(tm < 3600 ? `${tm / 60}′` : `${tm / 3600}h`, x, h - 2);
       }
@@ -1039,6 +1070,13 @@
       meta.frames.forEach((fr, f) => (f ? chx.lineTo(xf(f), yT(fr.T_drink)) : chx.moveTo(xf(f), yT(fr.T_drink)))); chx.stroke();
       chx.strokeStyle = '#a9d8ff'; chx.beginPath();
       meta.frames.forEach((fr, f) => (f ? chx.lineTo(xf(f), yI(fr.ice)) : chx.moveTo(xf(f), yI(fr.ice)))); chx.stroke();
+      if (RATIO) {                                                       // ABV top / bottom, 1 (mixed) to 4
+        const yR = q => h - pad - Math.max(0, Math.min(1, (q - 1) / 3)) * (h - 2 * pad);
+        chx.strokeStyle = '#c9a7ff'; chx.lineWidth = 1.3; chx.beginPath(); let on = false;
+        RATIO.forEach((q, f) => { if (q == null) { on = false; return; }
+          on ? chx.lineTo(xf(f), yR(q)) : chx.moveTo(xf(f), yR(q)); on = true; });
+        chx.stroke();
+      }
       const xc = xf(st.pos);
       chx.strokeStyle = 'rgba(255,255,255,0.8)'; chx.lineWidth = 1;
       chx.beginPath(); chx.moveTo(xc, pad); chx.lineTo(xc, h - pad); chx.stroke();
@@ -1092,12 +1130,12 @@
     function stop() { running = false; cancelAnimationFrame(raf); }
 
     // ------------------------------------------------------------ controls
-    const scrub = el('ck-scrub'); scrub.max = NF - 1; scrub.step = 0.01;
-    scrub.addEventListener('input', () => { st.pos = +scrub.value; if (st.pos < NF - 1) playIcon(st.playing ? 'pause' : 'play'); });
+    const scrub = el('ck-scrub'); scrub.max = 1; scrub.step = 0.00001;
+    scrub.addEventListener('input', () => { st.pos = uToPos(+scrub.value); if (st.pos < NF - 1) playIcon(st.playing ? 'pause' : 'play'); });
     // click or drag on the chart: go to that point (same axis as the scrub bar)
     function chartSeek(e) {
       const r = chart.getBoundingClientRect(), pad = 6;
-      st.pos = Math.max(0, Math.min(1, (e.clientX - r.left - pad) / (r.width - 2 * pad))) * (NF - 1);
+      st.pos = uToPos((e.clientX - r.left - pad) / (r.width - 2 * pad));
       if (st.pos < NF - 1) playIcon(st.playing ? 'pause' : 'play');
     }
     chart.addEventListener('pointerdown', e => { chart.setPointerCapture(e.pointerId); chartSeek(e); });
