@@ -92,17 +92,59 @@
         const n = Math.min(CHK, sg.n - j * CHK);
         return { sg, j, g: f - sg.first - j * CHK, n, key: `0:${sg.seg}:${j}`, pre: NB + `seg${sg.seg}_c${j}`, fl: null, f0: sg.first + j * CHK };
       };
+      // unpacking a chunk (decoding its images and undoing the deltas) takes ~80 ms; where the browser can
+      // decode images off the page (OffscreenCanvas) it runs in a worker, so playback doesn't stall when a
+      // chunk arrives. Elsewhere, or if the worker fails, it runs on the page as before.
+      const EXT = NM.ext || 'png', CHANS = [[0, 1, 2], [0, 1], [0, 1], [0, 1, 2, 3]];
+      const unpackHere = (pre, n, sg) => Promise.all([...['fields', 'vel', 'vela', 'vap', 'ice'].map(nm => loadImg(`${pre}_${nm}.${EXT}`)), fetch(pre + '.json').then(r => r.json())])
+        .then(([fI, vI, aI, pI, iI, st_]) => {
+          const ch = [fI, vI, aI, pI].map((im, q) => takeFrames(im, CHANS[q], n, sg.L, sg.bw, sg.bh, CC, NM.delta));
+          const ice = pixels(iI), iceW = iI.width / CC;
+          if (NM.delta) undelta(ice, iI.width, iI.height / Math.ceil(n / CC), iceW, n, CC);
+          return { ch, ice, iceW, st: st_ };
+        });
+      let worker = null; const jobs = new Map(); let jobId = 0;
+      if (typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined' && typeof createImageBitmap !== 'undefined') {
+        const src = `'use strict';
+function pixels(img) {
+  const c = new OffscreenCanvas(img.width, img.height), g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0); return g.getImageData(0, 0, img.width, img.height).data;
+}
+${takeFrames}
+${undelta}
+const bitmap = u => fetch(u).then(r => { if (!r.ok) throw new Error(u + ': ' + r.status); return r.blob(); })
+  .then(b => createImageBitmap(b, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' }));
+onmessage = async ({ data: J }) => {
+  try {
+    const ims = await Promise.all(['fields', 'vel', 'vela', 'vap', 'ice'].map(nm => bitmap(J.pre + '_' + nm + '.' + J.ext)));
+    const st = await fetch(J.pre + '.json').then(r => r.json());
+    const ch = ims.slice(0, 4).map((im, q) => takeFrames(im, J.chans[q], J.n, J.L, J.bw, J.bh, J.cc, J.delta));
+    const iI = ims[4], ice = pixels(iI), iceW = iI.width / J.cc;
+    if (J.delta) undelta(ice, iI.width, iI.height / Math.ceil(J.n / J.cc), iceW, J.n, J.cc);
+    ims.forEach(im => im.close());
+    const bufs = [ice.buffer]; ch.forEach(a => a.forEach(x => bufs.push(x.buffer)));
+    postMessage({ id: J.id, ch, ice, iceW, st }, bufs);
+  } catch (e) { postMessage({ id: J.id, err: String(e) }); }
+};`;
+        try {
+          worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+          worker.onmessage = ({ data: d }) => { const j = jobs.get(d.id); if (!j) return; jobs.delete(d.id); d.err ? j.no(new Error(d.err)) : j.ok(d); };
+          worker.onerror = e => { e.preventDefault(); worker = null; jobs.forEach(j => j.no(new Error('worker failed'))); jobs.clear(); };
+        } catch (e) { worker = null; }
+      }
+      const unpack = (pre, n, sg) => !worker ? unpackHere(pre, n, sg) : new Promise((ok, no) => {
+        const id = ++jobId; jobs.set(id, { ok, no });
+        worker.postMessage({ id, pre: new URL(pre, location.href).href, ext: EXT, chans: CHANS, n, L: sg.L, bw: sg.bw, bh: sg.bh, cc: CC, delta: !!NM.delta });
+      }).catch(e => { console.warn('chunk worker:', e.message, '(unpacking on the page instead)'); worker = null; return unpackHere(pre, n, sg); });
       const load = (f, L = 0) => {
         if (f < 0 || f >= meta.frames.length) return null;
         const W_ = where(f, L); if (!W_) return null;
         const { sg, n, key, pre, fl, f0 } = W_;
         if (held.has(key)) { const c = held.get(key); held.delete(key); held.set(key, c); return c.p; }
         const c = { ready: false };
-        c.p = Promise.all([...['fields', 'vel', 'vela', 'vap', 'ice'].map(nm => loadImg(`${pre}_${nm}.${NM.ext || 'png'}`)), fetch(pre + '.json').then(r => r.json())])
-          .then(([fI, vI, aI, pI, iI, st_]) => {
-            c.ch = chanSet([[fI, [0, 1, 2]], [vI, [0, 1]], [aI, [0, 1]], [pI, [0, 1, 2, 3]]].map(([im, chs]) => takeFrames(im, chs, n, sg.L, sg.bw, sg.bh, CC, NM.delta)));
-            c.ice = pixels(iI); c.iceW = iI.width / CC;
-            if (NM.delta) undelta(c.ice, iI.width, iI.height / Math.ceil(n / CC), c.iceW, n, CC);
+        c.p = unpack(pre, n, sg)
+          .then(({ ch, ice, iceW, st: st_ }) => {
+            c.ch = chanSet(ch); c.ice = ice; c.iceW = iceW;
             st_.forEach((x, i) => Object.assign(meta.frames[fl ? fl[f0 + i] : f0 + i], x));
             c.ready = true;
           }).catch(e => { held.delete(key); console.error(e); });
@@ -1112,11 +1154,11 @@
       } else if (SM) LV = 0;                                             // paused: every frame
       const [f0, f1, w] = frameAt(st.pos);
       if (SM) {
-        // the chunks here and the next two ahead (of the copy playing); until this frame's data is in,
-        // keep the last picture
+        // the chunks here and the next four ahead (of the copy playing; ~7 s at 1/4 speed, so a slow
+        // connection rarely runs dry); until this frame's data is in, keep the last picture
         SM.load(f0, LV); SM.load(f1, LV);
-        if (LV) { const a = SM.LODS[LV].all, i = a.indexOf(f1); SM.load(a[Math.min(a.length - 1, i + SM.CHK)], LV); SM.load(a[Math.min(a.length - 1, i + 2 * SM.CHK)], LV); SM.load(a[Math.min(a.length - 1, i + 3 * SM.CHK)], LV); }
-        else { SM.load(f1 + SM.CHK); SM.load(f1 + 2 * SM.CHK); }
+        if (LV) { const a = SM.LODS[LV].all, i = a.indexOf(f1); for (let k = 1; k <= 4; k++) SM.load(a[Math.min(a.length - 1, i + k * SM.CHK)], LV); }
+        else for (let k = 1; k <= 4; k++) SM.load(f1 + k * SM.CHK);
         const ok = have(st.pos); el('ck-buffer').hidden = ok;
         if (!ok) { drawChart(); if (running) raf = requestAnimationFrame(frame); return; }
       }
