@@ -476,3 +476,18 @@ h3 { font-size: 23px; line-height: 1.25; }
 .case-fun .arrow { margin-left: auto; color: var(--blue-3); font-size: 20px; }
 .case-fun:hover .arrow { transform: translateX(4px); }
 @media (max-width: 640px) { .case-fun { flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px; } .case-fun .arrow { display: none; } }
+
+/* ---------- analytics consent banner (js/consent.js) ---------- */
+.consent { position: fixed; z-index: 1000; left: 50%; bottom: 20px; transform: translateX(-50%);
+  width: min(560px, calc(100% - 32px)); background: var(--night-2); color: var(--on-night);
+  border: 1px solid var(--night-line); border-radius: var(--radius); padding: 18px 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .35); font: 400 14px/1.55 var(--sans); }
+.consent[hidden] { display: none; }
+.consent p { margin: 0 0 14px; color: var(--on-night-2); }
+.consent a { color: var(--blue-3); text-decoration: underline; text-underline-offset: 2px; }
+.consent-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.consent-actions button { min-width: 112px; padding: 9px 18px; border-radius: 999px; cursor: pointer;
+  font: 500 14px var(--sans); color: var(--on-night); background: transparent; border: 1px solid var(--blue-2); }
+.consent-actions button:hover { background: rgba(90, 128, 200, .18); }
+.consent-actions button:focus-visible { outline: 2px solid var(--blue-3); outline-offset: 2px; }
+.footer-legal a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
