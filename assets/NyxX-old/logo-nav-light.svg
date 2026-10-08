@@ -1,9 +1,0 @@
-<svg width="160" height="44" viewBox="0 0 160 44" xmlns="http://www.w3.org/2000/svg">
-  <title>NyxX</title>
-  <circle cx="22" cy="22" r="20" fill="none" stroke="#3f51b5" stroke-width="1.8" opacity="0.85"/>
-  <circle cx="22" cy="22" r="18.5" fill="none" stroke="#1565c0" stroke-width="0.5" opacity="0.25"/>
-  <circle cx="30" cy="18" r="16" fill="#ffffff"/>
-  <circle cx="30" cy="18" r="16" fill="none" stroke="#1565c0" stroke-width="0.8" opacity="0.35"/>
-  <polygon points="16,6 17.8,11.5 23,13.2 17.8,14.9 16,20.5 14.2,14.9 9,13.2 14.2,11.5" fill="#1a237e" opacity="0.8"/>
-  <text x="48" y="29" font-family="Georgia, 'Times New Roman', serif" font-size="24" font-weight="400" fill="#0d0d2e">Nyx<tspan fill="#3f51b5">X</tspan></text>
-</svg>
