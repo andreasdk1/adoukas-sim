@@ -46,7 +46,18 @@ Each case page corresponds to a project repo in `~/Documents/Engineering/cases/`
 | `cases/ct-tamper.html` | `ct_tamper_surrogate_demo` |
 | `cases/cocktail.html` | `cocktail_sim` |
 
-New case: add the page under `cases/`, a card in the case-studies section of `index.html`, and an entry in `sitemap.xml`.
+### Adding a case (checklist)
+Every new case page goes out with its search-engine tags and its own preview card. Copy the `<head>` of an existing case page and change:
+
+1. **`<title>`**: lead with the words an engineer would search for, then ` – Andreas Doukas` (e.g. "CISPR 25 conducted emission simulation of a motor inverter – Andreas Doukas").
+2. **`<meta name="description">`**: written from the page's content, at most 155 characters, saying what was simulated and the key result. Use the same text for `og:description`.
+3. **`<link rel="canonical">` and `og:url`**: `https://sim.adoukas.eu/cases/<slug>.html`.
+4. **Open Graph tags**: `og:title` (the page heading), `og:type` = article, `og:site_name` = Andreas Doukas Simulations, `og:locale` = en_GB, plus the image tags in step 5.
+5. **Preview card**: add an entry to `_og/cards.json` (slug, short title, key result, a picture from the project and its crop), run `python3 _og/build.py <slug>` and look at `assets/og/<slug>.jpg`: no app toolbars or stray labels in view, text readable. Point `og:image` and `twitter:image` at `https://sim.adoukas.eu/assets/og/<slug>.jpg`, with `og:image:width` 1200, `og:image:height` 630 and an `og:image:alt`. Source pictures that are not on the site go in `_og/src/` (folders starting with `_` are not published).
+6. **Structured data**: the schema.org `TechArticle` block before `</head>` (headline = page heading, description, url, image = the preview card; author and publisher by `@id` as in the existing pages). Check that it parses as JSON.
+7. **Page basics**: `js/consent.js`, `assets/fonts/fonts.css` and the footer `Privacy · Cookie settings` line (see below).
+8. **Links**: a card in the case-studies section of `index.html`, an entry in the table above, and a `<url>` with today's `lastmod` in `sitemap.xml`.
+9. After publishing, check the preview with LinkedIn's Post Inspector (linkedin.com/post-inspector), which also refreshes LinkedIn's cached copy.
 
 ### Contact
 Form posts to Formspree (`formspree.io/f/xgaoewgy`); listed in the privacy notice.

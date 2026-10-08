@@ -1,0 +1,50 @@
+[
+  {
+    "slug": "cispr25-explorer",
+    "title": "CISPR 25 conducted emission of a motor inverter",
+    "result": "Calibrated to 2.0 dB RMS against the lab scan",
+    "image": "../assets/cases/cispr25/explorer.png",
+    "size": "2600px auto",
+    "pos": "24% 14%"
+  },
+  {
+    "slug": "ct-tamper",
+    "title": "Magnetic tamper immunity of metering CTs",
+    "result": "Safe magnet distance for any shield stack, live",
+    "image": "../assets/cases/ct-tamper/explorer-v2.png",
+    "size": "2000px auto",
+    "pos": "41% 13%"
+  },
+  {
+    "slug": "meander-antenna",
+    "title": "Meander-line PCB antenna design",
+    "result": "2.6 ms per design point instead of ~90 s per FDTD solve",
+    "image": "../assets/cases/meander-antenna/explorer-hero.png",
+    "size": "1900px auto",
+    "pos": "41% 12%"
+  },
+  {
+    "slug": "rogowski-sensor",
+    "title": "Rogowski coil tolerance analysis",
+    "result": "Which manufacturing tolerance to tighten first",
+    "image": "../assets/cases/rogowski-sensor/explorer-v2.png",
+    "size": "2000px auto",
+    "pos": "43% 11%"
+  },
+  {
+    "slug": "pmsm-outrunner",
+    "title": "Outer-rotor PMSM hub motor optimisation",
+    "result": "+22 % peak torque in the same envelope",
+    "image": "../assets/cases/pmsm/field.jpg",
+    "size": "auto 125%",
+    "pos": "0% 55%"
+  },
+  {
+    "slug": "cocktail",
+    "title": "How fast does the ice water down your martini?",
+    "result": "Ice, dilution and warming over 3.5 hours",
+    "image": "src/cocktail.jpg",
+    "size": "100% auto",
+    "pos": "50% 0%"
+  }
+]
