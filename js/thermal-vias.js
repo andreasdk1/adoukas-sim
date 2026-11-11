@@ -89,15 +89,20 @@
     const s = r.cases[r.selected], b = r.opt.best;
     $('tv-case-label').textContent = (s.o.side === 'top' ? 'part on top' : 'part underneath') + ' · ' + viaName[s.o.via];
     $('tv-tj').textContent = fmtT(s.Tj);
-    $('tv-k-array').textContent = `${b.m}×${b.n} · Ø${mm(b.d)}`;
+    $('tv-k-array').textContent = `${b.m} × ${b.n}`;
+    $('tv-k-array-s').textContent = `Ø${mm(b.d)} at ${mm(b.pitch)} mm`;
     $('tv-r-drill').textContent = `${mm(b.d)} · ${mm(b.pitch)} mm · ${b.m} × ${b.n} = ${b.N}`;
     const Rarr = s.arr.R;
-    $('tv-r-rarr').textContent = Rarr.toFixed(Rarr < 10 ? 2 : 1) + ' K/W';
+    const Rja = (s.Tj - s.o.Tamb) / s.o.P;
+    $('tv-r-rarr').textContent = `${(100 * Rarr / Rja).toFixed(0)} %`;
+    $('tv-r-rarr-s').textContent = `${Rarr.toFixed(Rarr < 10 ? 2 : 1)} of ${Rja.toFixed(1)} K/W`;
     $('tv-r-rja').textContent = ((s.Tj - s.o.Tamb) / s.o.P).toFixed(1) + ' K/W';
     $('tv-r-novia').textContent = r.partial ? '…' : '+' + (r.cases.noVias.Tj - r.cases[s.o.side + '_tented'].Tj).toFixed(1) + ' K';
     if (!r.partial) {
       const d = r.cases[s.o.side + '_open'].Tj - r.cases[s.o.side + '_tented'].Tj;
-      $('tv-k-tent').textContent = (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(2) + ' K';
+      const rise = r.cases[s.o.side + '_tented'].Tj - s.o.Tamb;
+      $('tv-k-tent').textContent = `${(d >= 0 ? '+' : '−')}${(100 * Math.abs(d) / rise).toFixed(2)} %`;
+      $('tv-k-tent-s').textContent = `of the rise, ${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(2)} K`;
     } else $('tv-k-tent').textContent = '…';
     if (s.o.enclosure) {
       const up = s.o.side === 'top' ? s.TwallC : s.TwallF, dn = s.o.side === 'top' ? s.TwallF : s.TwallC;

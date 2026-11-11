@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Thermal via array calculator: tented vs open vias, sizing and enclosure – Andreas Doukas</title>
-  <meta name="description" content="Live calculator for a thermal via array under a component in a small sealed box: best drill and m × n, and why tenting changes the junction by under 1 K.">
+  <meta name="description" content="Live calculator for a thermal via array in a sealed box: best drill and m × n. Tenting changes the temperature rise by under 1 %; the enclosure dominates.">
   <meta property="og:title" content="Does tenting a thermal via array change its cooling?">
-  <meta property="og:description" content="Live calculator for a thermal via array under a component in a small sealed box: best drill and m × n, and why tenting changes the junction by under 1 K.">
+  <meta property="og:description" content="Live calculator for a thermal via array in a sealed box: best drill and m × n. Tenting changes the temperature rise by under 1 %; the enclosure dominates.">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="Andreas Doukas Simulations">
   <meta property="og:locale" content="en_GB">
@@ -30,7 +30,7 @@
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "Does tenting a thermal via array change its cooling?",
-    "description": "Live calculator for a thermal via array under a component in a small sealed box: best drill and m × n, and why tenting changes the junction by under 1 K.",
+    "description": "Live calculator for a thermal via array in a sealed box: best drill and m × n. Tenting changes the temperature rise by under 1 %; the enclosure dominates.",
     "url": "https://sim.adoukas.eu/cases/thermal-vias.html",
     "image": "https://sim.adoukas.eu/assets/og/thermal-vias.jpg",
     "inLanguage": "en",
@@ -74,10 +74,10 @@
     <div class="tv-main">
       <div class="tv-kpis" aria-live="polite">
         <div class="tv-kpi tv-kpi-main"><span>Junction</span><b id="tv-tj">–</b></div>
-        <div class="tv-kpi"><span>Best array</span><b id="tv-k-array">–</b></div>
-        <div class="tv-kpi"><span>Array resistance</span><b id="tv-r-rarr">–</b></div>
-        <div class="tv-kpi"><span>Open vs tented</span><b id="tv-k-tent">–</b></div>
-        <div class="tv-kpi"><span>Without vias</span><b id="tv-r-novia">–</b></div>
+        <div class="tv-kpi"><span>Best array</span><b id="tv-k-array">–</b><small id="tv-k-array-s"></small></div>
+        <div class="tv-kpi"><span title="Share of the junction-to-room thermal resistance">Array share</span><b id="tv-r-rarr">–</b><small id="tv-r-rarr-s"></small></div>
+        <div class="tv-kpi"><span>Open vs tented</span><b id="tv-k-tent">–</b><small id="tv-k-tent-s"></small></div>
+        <div class="tv-kpi"><span>Without vias</span><b id="tv-r-novia">–</b><small>junction rise</small></div>
       </div>
 
       <div class="tv-toolbar">
@@ -205,16 +205,16 @@
 
 <main class="case-body">
   <div class="metric-block">
-    <span class="metric-number">&lt; 1 K</span>
-    <span class="metric-label">is all that tenting changes at the junction, against about 16 K for leaving the vias out.</span>
+    <span class="metric-number">&lt; 1 %</span>
+    <span class="metric-label">of the temperature rise is all that tenting changes, in every case tried. The via array itself is only 3–17 % of the thermal path: the board and the enclosure set the junction temperature.</span>
   </div>
 
   <h2>Short answer</h2>
   <ul>
+    <li><strong>Tenting changes the temperature rise by under 1 %</strong> (0.1–0.6 % across all cases, about 0.15 % at default). Open vias perform marginally worse: their pads replace solder mask (emissivity 0.9) with bare finish (0.1), which radiates less.</li>
+    <li><strong>The enclosure dominates.</strong> The array accounts for 3–17 % of the resistance from junction to room. Leaving the vias out costs about 16 K, but copper-filling them gains only about 1.6 K; copper area, board size and a path to the enclosure wall matter more.</li>
     <li><strong>The vias work by conduction.</strong> The open holes are dead ends, closed by the solder under the part, and carry well under 1 % of the heat.</li>
-    <li><strong>Tenting performs marginally better.</strong> Open via pads replace solder mask (emissivity 0.9) with bare finish (0.1), which radiates less; open vias run 0.05–0.8 K hotter.</li>
     <li><strong>Component orientation has little effect in this enclosure:</strong> 0.03–0.5 K between mounting the part on top and underneath.</li>
-    <li><strong>The enclosure dominates.</strong> The array accounts for about a tenth of the 45 K/W from junction to room; board spreading, the air layers and the walls make up the rest.</li>
     <li><strong>Tenting matters for assembly:</strong> open vias in a soldered pad wick solder away from the joint and leave voids.</li>
   </ul>
 

@@ -9,11 +9,13 @@
 .tv-main { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 
 /* key results */
-.tv-kpis { display: grid; grid-template-columns: 1.3fr repeat(4, 1fr); gap: 8px; }
+.tv-kpis { display: grid; grid-template-columns: 1.1fr 1fr 1fr 1.15fr 1fr; gap: 8px; }
 .tv-kpi { background: var(--night-2); border: 1px solid var(--night-line); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tv-kpi span { font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-night-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tv-kpi b { font: 500 15px var(--mono); color: var(--on-night); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tv-kpi-main b { font: 400 26px/1.1 var(--serif); color: #fff; }
+.tv-kpi small { font: 400 10.5px var(--mono); color: var(--on-night-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tv-kpi-main { justify-content: center; }
 
 .tv-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .seg { display: inline-flex; border: 1px solid var(--night-line); border-radius: 999px; padding: 3px; background: rgba(17,27,54,.6); }
