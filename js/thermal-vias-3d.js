@@ -285,12 +285,15 @@
       return out;
     }
     function shimmer(lag) { return REDUCED ? 1 : 0.86 + 0.14 * Math.sin(1.6 * clock - lag); }
-    function drawGlow(z, layer, lag) {
+    // in 'All' the glow on the board is kept light so the temperature colours stay saturated;
+    // the Radiation view shows it at full strength
+    const boardGlow = () => (mode === 'rad' ? 1 : 0.4);
+    function drawGlow(z, layer, lag, k = 1) {
       if (!layer || mode === 'conv') return;
       plane(z);
       ctx.transform(g.W / layer.img.width, 0, 0, -g.H / layer.img.height, -g.W / 2, g.H / 2);
       ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = shimmer(lag);
+      ctx.globalAlpha = Math.min(1, shimmer(lag) * k);
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(layer.img, 0, 0);
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
@@ -486,7 +489,7 @@
         ctx.strokeRect(-g.arrW / 2, -g.arrH / 2, g.arrW, g.arrH); ctx.setLineDash([]);
       }
       screen();
-      drawGlow(z, top ? g.glowU : g.glowL, 0);
+      drawGlow(z, top ? g.glowU : g.glowL, 0, boardGlow());
     }
     function boardEdges() {
       const W = g.W / 2, H = g.H / 2;
@@ -508,7 +511,7 @@
         if (vis) {
           plane(zt);
           ctx.globalCompositeOperation = 'lighter';
-          ctx.fillStyle = `rgba(${GLOW[0]},${GLOW[1]},${GLOW[2]},${g.pkgAlpha * shimmer(0)})`;
+          ctx.fillStyle = `rgba(${GLOW[0]},${GLOW[1]},${GLOW[2]},${g.pkgAlpha * shimmer(0) * (mode === 'rad' ? 1 : 0.55)})`;
           ctx.fillRect(-b, -b, 2 * b, 2 * b);
           ctx.globalCompositeOperation = 'source-over';
           screen();

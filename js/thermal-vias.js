@@ -488,7 +488,7 @@
     xsCtx.clearRect(0, 0, 760, 440);
     if (xsGlow && heatMode !== 'conv') {
       xsCtx.globalCompositeOperation = 'lighter';
-      xsCtx.globalAlpha = REDUCED ? 1 : 0.86 + 0.14 * Math.sin(1.6 * xsClock);
+      xsCtx.globalAlpha = (REDUCED ? 1 : 0.86 + 0.14 * Math.sin(1.6 * xsClock)) * (heatMode === 'rad' ? 1 : 0.55);
       xsCtx.drawImage(xsGlow, 0, 0);
       xsCtx.globalAlpha = 1; xsCtx.globalCompositeOperation = 'source-over';
     }
