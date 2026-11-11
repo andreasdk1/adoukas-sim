@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thermal via array calculator: tented vs open vias, sizing and enclosure – Andreas Doukas</title>
+  <meta name="description" content="Live calculator for a thermal via array under a component in a small sealed box: best drill and m × n, and why tenting changes the junction by under 1 K.">
+  <meta property="og:title" content="Does tenting a thermal via array change its cooling?">
+  <meta property="og:description" content="Live calculator for a thermal via array under a component in a small sealed box: best drill and m × n, and why tenting changes the junction by under 1 K.">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Andreas Doukas Simulations">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:url" content="https://sim.adoukas.eu/cases/thermal-vias.html">
+  <link rel="canonical" href="https://sim.adoukas.eu/cases/thermal-vias.html">
+  <meta property="og:image" content="https://sim.adoukas.eu/assets/og/thermal-vias.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Case study: Does tenting a thermal via array change its cooling? Heat flow through a via array in a sealed enclosure.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://sim.adoukas.eu/assets/og/thermal-vias.jpg">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="case.css">
+  <link rel="stylesheet" href="thermal-vias.css">
+  <script>document.documentElement.classList.add('js')</script>
+  <!-- Structured data for search engines (schema.org) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Does tenting a thermal via array change its cooling?",
+    "description": "Live calculator for a thermal via array under a component in a small sealed box: best drill and m × n, and why tenting changes the junction by under 1 K.",
+    "url": "https://sim.adoukas.eu/cases/thermal-vias.html",
+    "image": "https://sim.adoukas.eu/assets/og/thermal-vias.jpg",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Person",
+      "@id": "https://sim.adoukas.eu/#andreas",
+      "name": "Andreas Doukas",
+      "url": "https://sim.adoukas.eu/#about"
+    },
+    "publisher": {
+      "@type": "ProfessionalService",
+      "@id": "https://sim.adoukas.eu/#business",
+      "name": "Andreas Doukas s.p.",
+      "url": "https://sim.adoukas.eu/"
+    }
+  }
+  </script>
+</head>
+<body class="case-page">
+
+<header id="nav" class="nav on-dark">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html" aria-label="Andreas Doukas — home"><svg class="mono" viewBox="0 0 104 74" aria-hidden="true"><path d="M4,70 L30,6 L56,70" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M34,46 L43.8,70" stroke="#5a80c8" stroke-width="5"/><path d="M40,6 H70 A32,32 0 0 1 70,70 H60" fill="none" stroke="currentColor" stroke-width="5"/></svg><span class="wordmark"><span class="wm-name">Andreas Doukas</span><span class="wm-tag">Simulation · Optimization · Performance</span></span></a>
+    <a class="nav-back" href="../index.html#case-studies">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      All <span>case studies</span>
+    </a>
+  </div>
+</header>
+
+<section class="case-hero tv-hero">
+  <div class="wrap">
+    <span class="case-tag">Live calculator · PCB thermal design</span>
+    <h1>Does tenting a thermal via array change its cooling?</h1>
+    <p class="tv-lede">Sizes the thermal via array under a component in a sealed, passively cooled enclosure, and resolves the conduction, convection and radiation paths to quantify the effect of tenting. Solved live in the browser.</p>
+  </div>
+</section>
+
+<section class="tv-band" id="calculator">
+  <div class="wrap tv-grid">
+    <div class="tv-main">
+      <div class="tv-kpis" aria-live="polite">
+        <div class="tv-kpi tv-kpi-main"><span>Junction</span><b id="tv-tj">–</b></div>
+        <div class="tv-kpi"><span>Best array</span><b id="tv-k-array">–</b></div>
+        <div class="tv-kpi"><span>Array resistance</span><b id="tv-r-rarr">–</b></div>
+        <div class="tv-kpi"><span>Open vs tented</span><b id="tv-k-tent">–</b></div>
+        <div class="tv-kpi"><span>Without vias</span><b id="tv-r-novia">–</b></div>
+      </div>
+
+      <div class="tv-toolbar">
+        <div class="seg seg-sm" role="radiogroup" aria-label="View">
+          <label><input type="radio" name="tv-view" value="3d" checked><span>3D</span></label>
+          <label><input type="radio" name="tv-view" value="flow"><span>Section</span></label>
+          <label><input type="radio" name="tv-view" value="board"><span>Board 2D</span></label>
+        </div>
+        <div id="tv-legend-heat" class="seg seg-sm" role="radiogroup" aria-label="Heat paths shown">
+          <label><input type="radio" name="tv-mode" value="all" checked><span>All</span></label>
+          <label><input type="radio" name="tv-mode" value="conv"><span>Convection</span></label>
+          <label><input type="radio" name="tv-mode" value="rad"><span>Radiation</span></label>
+        </div>
+      </div>
+
+      <div class="tv-stagebox">
+        <div id="tv-3d" class="tv-stage tv-3d">
+          <canvas id="tv-3d-canvas" aria-label="3D view of the board, component, vias and enclosure, coloured by temperature; drag to rotate, scroll to zoom"></canvas>
+          <p class="tv-3d-hint">drag · scroll to zoom · double-click resets</p>
+        </div>
+        <div id="tv-flow" class="tv-stage tv-xs" hidden>
+          <canvas id="tv-xsec-fx" aria-hidden="true"></canvas>
+          <svg id="tv-xsec" viewBox="0 0 760 440" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Cross-section of the enclosure, board and component with the heat flow along each path"></svg>
+        </div>
+        <div id="tv-board" class="tv-stage tv-maps" hidden>
+          <figure><canvas id="tv-map-c" aria-label="Temperature of the component side of the board"></canvas><figcaption>Component side</figcaption></figure>
+          <figure><canvas id="tv-map-f" aria-label="Temperature of the free side of the board"></canvas><figcaption>Free side</figcaption></figure>
+          <p id="tv-map-read" class="tv-map-read" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="tv-legend">
+        <span class="lg"><span class="tv-lg-lo">–</span><i class="ramp thermal"></i><span class="tv-lg-hi">–</span></span>
+        <ul class="tv-keys">
+          <li><i class="k-conv"></i>convection</li>
+          <li><i class="k-rad"></i>radiation</li>
+          <li><i class="k-cond"></i>conduction</li>
+        </ul>
+        <span id="tv-case-label" class="tv-case">–</span>
+      </div>
+    </div>
+
+    <aside class="tv-panel">
+      <div class="tv-2">
+        <label>Pad width, mm<input id="i-arrW" type="number" min="0.5" max="30" step="0.1" value="4"></label>
+        <label>Pad height, mm<input id="i-arrH" type="number" min="0.5" max="30" step="0.1" value="4"></label>
+        <label>Min drill, mm<input id="i-dMin" type="number" min="0.1" max="1" step="0.05" value="0.3"></label>
+        <label>Annular ring, mm<input id="i-ring" type="number" min="0.05" max="0.5" step="0.025" value="0.15"></label>
+      </div>
+      <label class="tv-1">Via treatment
+        <select id="i-via">
+          <option value="tented" selected>Tented on the free side</option>
+          <option value="open">Open (untented)</option>
+          <option value="plugged">Epoxy plugged and capped</option>
+          <option value="cufill">Copper filled</option>
+        </select>
+      </label>
+      <div class="ctl">
+        <label for="i-P">Power <b id="i-P-v">2.0 W</b></label>
+        <input id="i-P" type="range" min="0.1" max="10" step="0.1" value="2">
+      </div>
+      <div class="seg seg-sm tv-seg" role="radiogroup" aria-label="Component side">
+        <label><input type="radio" name="i-side" value="top" checked><span>Part on top</span></label>
+        <label><input type="radio" name="i-side" value="bottom"><span>Underneath</span></label>
+      </div>
+      <div class="tv-2">
+        <label>Board width, mm<input id="i-boardW" type="number" min="10" max="150" step="1" value="50"></label>
+        <label>Board length, mm<input id="i-boardH" type="number" min="10" max="150" step="1" value="40"></label>
+        <label>Air above, mm<input id="i-gapUp" type="number" min="2" max="100" step="1" value="30"></label>
+        <label>Air below, mm<input id="i-gapDn" type="number" min="2" max="100" step="1" value="10"></label>
+      </div>
+      <div class="ctl">
+        <label for="i-fan">Fan (vented box) <b id="i-fan-v">off</b></label>
+        <input id="i-fan" type="range" min="0" max="5" step="0.1" value="0">
+      </div>
+      <details class="tv-more">
+        <summary>More settings</summary>
+        <label class="tv-check"><input id="i-enclosure" type="checkbox" checked> Sealed enclosure</label>
+        <div class="tv-2">
+          <label title="Drill edge to drill edge">Hole to hole, mm<input id="i-hole2hole" type="number" min="0.1" max="1" step="0.05" value="0.25"></label>
+          <label>Plating, µm<input id="i-plating" type="number" min="10" max="50" step="1" value="25"></label>
+          <label>Board thickness, mm<input id="i-tb" type="number" min="0.4" max="3.2" step="0.1" value="1.6"></label>
+          <label>Layers<select id="i-layers"><option value="2" selected>2</option><option value="4">4</option><option value="6">6</option></select></label>
+          <label>Body size, mm<input id="i-body" type="number" min="1" max="40" step="0.5" value="6"></label>
+          <label title="Junction to exposed pad"><span>R<sub>jb</sub>, K/W</span><input id="i-Rjb" type="number" min="0.1" max="50" step="0.1" value="2.5"></label>
+        </div>
+        <div class="ctl">
+          <label for="i-Tamb">Room <b id="i-Tamb-v">25 °C</b></label>
+          <input id="i-Tamb" type="range" min="0" max="60" step="1" value="25">
+        </div>
+      </details>
+      <div class="tv-panel-foot">
+        <p id="tv-status" class="tv-status busy">Solving…</p>
+        <button id="tv-reset" class="tv-reset" type="button">Reset</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="wrap tv-details">
+    <div class="tv-detail">
+      <h3 class="tv-h3">Junction temperature, same array</h3>
+      <table class="tv-table" id="tv-table">
+        <thead><tr><th scope="col"></th><th scope="col">Tented</th><th scope="col">Open</th><th scope="col">Difference</th></tr></thead>
+        <tbody>
+          <tr data-side="top"><th scope="row">Part on top</th><td>–</td><td>–</td><td>–</td></tr>
+          <tr data-side="bottom"><th scope="row">Underneath</th><td>–</td><td>–</td><td>–</td></tr>
+        </tbody>
+      </table>
+      <dl class="tv-read">
+        <div><dt>Drill · pitch · vias</dt><dd id="tv-r-drill">–</dd></div>
+        <div><dt>Junction to room</dt><dd id="tv-r-rja">–</dd></div>
+        <div><dt>Enclosure walls</dt><dd id="tv-r-walls">–</dd></div>
+        <div><dt>Open holes carry</dt><dd id="tv-r-holes">–</dd></div>
+        <div><dt>Radiation, upper face</dt><dd id="tv-r-radU">–</dd></div>
+        <div><dt>Radiation, lower face</dt><dd id="tv-r-radL">–</dd></div>
+      </dl>
+    </div>
+    <div class="tv-detail">
+      <h3 class="tv-h3">Array resistance by drill</h3>
+      <div class="tv-chart" id="tv-chart" role="img" aria-label="Thermal resistance of the via array for each drill size; the lowest is chosen"></div>
+      <p class="tv-note">Most vias of each drill that fit the pad. Lower is better.</p>
+    </div>
+  </div>
+</section>
+
+<main class="case-body">
+  <div class="metric-block">
+    <span class="metric-number">&lt; 1 K</span>
+    <span class="metric-label">is all that tenting changes at the junction, against about 16 K for leaving the vias out.</span>
+  </div>
+
+  <h2>Short answer</h2>
+  <ul>
+    <li><strong>The vias work by conduction.</strong> The open holes are dead ends, closed by the solder under the part, and carry well under 1 % of the heat.</li>
+    <li><strong>Tenting performs marginally better.</strong> Open via pads replace solder mask (emissivity 0.9) with bare finish (0.1), which radiates less; open vias run 0.05–0.8 K hotter.</li>
+    <li><strong>Component orientation has little effect in this enclosure:</strong> 0.03–0.5 K between mounting the part on top and underneath.</li>
+    <li><strong>The enclosure dominates.</strong> The array accounts for about a tenth of the 45 K/W from junction to room; board spreading, the air layers and the walls make up the rest.</li>
+    <li><strong>Tenting matters for assembly:</strong> open vias in a soldered pad wick solder away from the joint and leave voids.</li>
+  </ul>
+
+  <dl class="physics-box">
+    <div><dt>Physics</dt><dd><ul class="phys-list">
+      <li><b>Via array</b><span>Barrel, fill and FR4 in parallel, most vias of each drill that fit the pad</span></li>
+      <li><b>Board</b><span>Two conducting sheets coupled through the thickness</span></li>
+      <li><b>Air</b><span>Hollands' correlation above a hot face, stable layer below one</span></li>
+      <li><b>Radiation</b><span>Grey-body exchange with real emissivities; view factors for the walls</span></li>
+      <li><b>Solver</b><span>Finite volumes, conjugate gradients, in your browser</span></li>
+    </ul></dd></div>
+    <div><dt>Role of ML</dt><dd>This study is a direct physics model. It solves in under a second, so every input change gives a full solution rather than an approximation of one.</dd></div>
+  </dl>
+
+  <h2>Validation</h2>
+  <table class="tv-vtable">
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Via formula vs axisymmetric model resolving the plating</td><td>±2 % (copper-filled: formula up to 14 % optimistic)</td></tr>
+      <tr><td>Two-sheet board vs 3D layered model</td><td>within 0.8 %</td></tr>
+      <tr><td>Energy balance</td><td>closes to 0.1 mW live, 10<sup>−11</sup> W solved tightly</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Stated limits</h2>
+  <ul>
+    <li>Air layers use correlations, about ±20 %; the down-facing side is the least certain.</li>
+    <li>Vias are smeared over the pad; solder voids and wicking are not modelled.</li>
+    <li>Board edges and other parts on the board are left out; with the fan on, the box is vented.</li>
+  </ul>
+</main>
+
+<section class="case-cta">
+  <div class="wrap">
+    <h2>Sizing the cooling for a real board?</h2>
+    <div class="actions">
+      <a class="btn btn-primary" href="../index.html#contact">Start a conversation</a>
+      <a class="btn btn-ghost" href="../index.html#case-studies">More case studies <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <a class="brand" href="../index.html" aria-label="Andreas Doukas — home"><svg class="mono" viewBox="0 0 104 74" aria-hidden="true"><path d="M4,70 L30,6 L56,70" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M34,46 L43.8,70" stroke="#5a80c8" stroke-width="5"/><path d="M40,6 H70 A32,32 0 0 1 70,70 H60" fill="none" stroke="currentColor" stroke-width="5"/></svg><span class="wordmark"><span class="wm-name">Andreas Doukas</span><span class="wm-tag">Simulation · Optimization · Performance</span></span></a>
+    <p>© 2026 Andreas Doukas s.p. · Slovenia, EU</p>
+    <p class="footer-legal"><a href="../privacy.html">Privacy</a> · <a href="#" data-consent-open>Cookie settings</a></p>
+    <p>EM, thermal &amp; CFD simulation consulting</p>
+  </div>
+</footer>
+
+<script src="../js/site.js" defer></script>
+<script src="../js/consent.js" defer></script>
+<script src="../assets/cases/thermal-vias/vias-model.js" defer></script>
+<script src="../js/thermal-vias-3d.js" defer></script>
+<script src="../js/thermal-vias.js" defer></script>
+
+</body>
+</html>

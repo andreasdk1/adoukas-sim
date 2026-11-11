@@ -46,5 +46,13 @@
     "image": "src/cocktail.jpg",
     "size": "100% auto",
     "pos": "50% 0%"
+  },
+  {
+    "slug": "thermal-vias",
+    "title": "Thermal via arrays: does tenting matter?",
+    "result": "Under 1 K at the junction; the vias cool by conduction",
+    "image": "src/thermal-vias.png",
+    "size": "1500px auto",
+    "pos": "58% 58%"
   }
 ]

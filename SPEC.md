@@ -45,6 +45,7 @@ Each case page corresponds to a project repo in `~/Documents/Engineering/cases/`
 | `cases/rogowski-sensor.html` | `sensor_surrogate_demo` |
 | `cases/ct-tamper.html` | `ct_tamper_surrogate_demo` |
 | `cases/cocktail.html` | `cocktail_sim` |
+| `cases/thermal-vias.html` | `vias_testing` |
 
 ### Adding a case (checklist)
 Every new case page goes out with its search-engine tags and its own preview card. Copy the `<head>` of an existing case page and change:
