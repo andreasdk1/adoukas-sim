@@ -9,10 +9,10 @@
     bar: '#2f5cb4', barBest: '#a9c0ea', grid: 'rgba(169,192,234,0.12)' };
 
   // ------------------------------------------------------------------ inputs
-  const NUM = ['arrW', 'arrH', 'dMin', 'ring', 'hole2hole', 'plating', 'body', 'Rjb', 'boardW', 'boardH', 'tb', 'gapUp', 'gapDn'];
+  const NUM = ['arrW', 'arrH', 'dMin', 'ring', 'hole2hole', 'plating', 'body', 'Rjb', 'boardW', 'boardH', 'tb', 'gapUp', 'gapDn', 'cuMargin'];
   const defaults = {};
   for (const k of NUM) defaults[k] = $('i-' + k).value;
-  for (const k of ['P', 'fan', 'Tamb', 'via', 'layers']) defaults[k] = $('i-' + k).value;
+  for (const k of ['P', 'fan', 'Tamb', 'via', 'layers', 'cuComp', 'cuFree', 'cuInner']) defaults[k] = $('i-' + k).value;
   const num = (k, lo, hi) => {
     const el = $('i-' + k), v = parseFloat(el.value);
     if (!isFinite(v)) return null;
@@ -24,6 +24,7 @@
       arrW: num('arrW', 0.5, 30), arrH: num('arrH', 0.5, 30), dMin: num('dMin', 0.1, 1), ring: num('ring', 0.05, 0.5),
       hole2hole: num('hole2hole', 0.1, 1), plating: num('plating', 10, 50), body: num('body', 1, 40), Rjb: num('Rjb', 0.1, 50),
       boardW: num('boardW', 10, 150), boardH: num('boardH', 10, 150), tb: num('tb', 0.4, 3.2), gapUp: num('gapUp', 2, 100), gapDn: num('gapDn', 2, 100),
+      cuMargin: num('cuMargin', 0.5, 30),
     };
     for (const k in v) if (v[k] === null) return null;
     const P = +$('i-P').value, fan = +$('i-fan').value, Tamb = +$('i-Tamb').value;
@@ -34,6 +35,7 @@
       bodyW: body * mm, bodyH: body * mm, Rjb: v.Rjb, P, side, via: $('i-via').value,
       boardW: Math.max(v.boardW, body + 2) * mm, boardH: Math.max(v.boardH, body + 2) * mm, tb: v.tb * mm, layers: +$('i-layers').value,
       enclosure: $('i-enclosure').checked, gapUp: v.gapUp * mm, gapDn: v.gapDn * mm, fan, Tamb,
+      cuComp: $('i-cuComp').value, cuFree: $('i-cuFree').value, cuMargin: v.cuMargin * mm, cuInner: $('i-cuInner').value,
       grid: Math.max(0.5e-3, Math.max(v.boardW, v.boardH) * mm / 110),
     };
   }
@@ -44,6 +46,8 @@
     $('i-Tamb-v').textContent = $('i-Tamb').value + ' °C';
     const enc = $('i-enclosure').checked;
     $('i-gapUp').disabled = $('i-gapDn').disabled = !enc;
+    $('i-cuMargin').disabled = $('i-cuComp').value !== 'margin' && $('i-cuFree').value !== 'margin';
+    $('i-cuInner').disabled = $('i-layers').value === '2';
   }
 
   // ------------------------------------------------------------------ solver
@@ -51,7 +55,13 @@
   try {
     const src = document.querySelector('script[src*="vias-model.js"]').src.replace('vias-model.js', 'vias-worker.js');
     worker = new Worker(src);
-    worker.onmessage = e => { if (e.data.id === reqId) e.data.ok ? show(e.data.r) : fail(e.data.error); };
+    worker.onmessage = e => {
+      const m = e.data;
+      if (m.id !== reqId) return;
+      if (!m.ok) fail(m.error);
+      else if (m.drills) showDrills(m.drills, m.partial);
+      else show(m.r);
+    };
     worker.onerror = () => { worker = null; schedule(); };
   } catch (e) { worker = null; }
   let timer = 0;
@@ -61,11 +71,17 @@
     const o = readOpts();
     if (!o) { status('bad', 'Check the highlighted input.'); return; }
     status('busy', 'Solving…');
-    reqId++; t0 = performance.now();
+    reqId++; t0 = performance.now(); drillRows = null;
     if (worker) worker.postMessage({ id: reqId, opts: o });
     else {
-      const id = reqId;
-      setTimeout(() => { if (id !== reqId) return; try { show(window.ViaModel.compare(o)); } catch (err) { fail(err.message); } }, 0);
+      const id = reqId, cache = {};
+      setTimeout(() => {
+        if (id !== reqId) return;
+        try { show(window.ViaModel.compare(o, null, cache)); } catch (err) { fail(err.message); return; }
+        const next = window.ViaModel.drillSweep(o, cache), rows = [];
+        const tick = () => { if (id !== reqId) return; const r = next(); if (r) { rows.push(r); setTimeout(tick, 0); } showDrills(rows.slice(), !!r); };
+        setTimeout(tick, 0);
+      }, 0);
     }
   }
   function status(kind, text) { const s = $('tv-status'); s.className = 'tv-status ' + kind; s.textContent = text; }
@@ -78,6 +94,7 @@
   const mm = x => (x * 1e3).toFixed(2);
   const sideName = s => (s === 'top' ? 'Component on top' : 'Component underneath');
   const viaName = { tented: 'tented', open: 'open', plugged: 'plugged and capped', cufill: 'copper filled' };
+  const cuName = (m, o) => (m === 'pad' ? 'pad only' : m === 'margin' ? `pad + ${(o.cuMargin * 1e3).toFixed(1)} mm` : 'plane');
 
   function show(r) {
     last = r;
@@ -88,6 +105,7 @@
     }
     const s = r.cases[r.selected], b = r.opt.best;
     $('tv-case-label').textContent = (s.o.side === 'top' ? 'part on top' : 'part underneath') + ' · ' + viaName[s.o.via];
+    $('tv-r-cu').textContent = `${cuName(s.o.cuComp, s.o)} · ${cuName(s.o.cuFree, s.o)}`;
     $('tv-tj').textContent = fmtT(s.Tj);
     $('tv-k-array').textContent = `${b.m} × ${b.n}`;
     $('tv-k-array-s').textContent = `Ø${mm(b.d)} at ${mm(b.pitch)} mm`;
@@ -115,6 +133,7 @@
     colourScale(s);
     if (!r.partial) table(r);
     chart(r);
+    why(r);
     xsec(s);
     show3d(s);
     buildXsGlow();
@@ -150,48 +169,106 @@
     if (parent) parent.appendChild(e);
     return e;
   }
+  // Two panels on one drill axis: the junction temperature with the most vias of each drill
+  // (solved for every drill, arriving after the main result) and the array resistance.
+  let drillRows = null, lastR = null;
+  function showDrills(rows, partial) {
+    drillRows = { rows, partial };
+    if (lastR) { chart(lastR); why(lastR); }
+  }
   function chart(r) {
+    lastR = r;
     const rows = r.opt.rows, best = r.opt.best;
-    const W = 640, H = 220, L = 44, R = 10, T = 30, B = 30;
+    const W = 640, H = 300, L = 46, R = 10;
+    const tT = 28, tB = 138, bT = 166, bB = 238, xl = 256;         // top panel, bottom panel, x labels
     const old = chartEl.querySelector('svg'); if (old) old.remove();
     const svg = el('svg', { viewBox: `0 0 ${W} ${H}` });
     chartEl.insertBefore(svg, tip);
-    const maxR = Math.max(...rows.map(x => x.R)) * 1.12;
-    const step = niceStep(maxR / 4);
-    const y = v => T + (H - T - B) * (1 - v / maxR);
-    for (let v = 0; v <= maxR + 1e-9; v += step) {
-      el('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: COL.grid, 'stroke-width': 1 }, svg);
-      el('text', { x: L - 8, y: y(v) + 3.5, 'text-anchor': 'end', 'font-size': 10, fill: COL.ink2 }, svg).textContent = +v.toFixed(3);
+    const n = rows.length, bw = (W - L - R) / n, w = Math.max(4, Math.min(24, bw - 8));
+    const X = i => L + bw * (i + 0.5);
+    const tj = new Map();
+    if (drillRows) for (const d of drillRows.rows) tj.set(d.d.toFixed(6), d.Tj);
+    const T = row => tj.get(row.d.toFixed(6));
+    // top: junction temperature
+    const known = rows.map(T).filter(v => v !== undefined);
+    el('text', { x: L, y: 12, 'font-size': 10, fill: COL.ink2 }, svg).textContent = 'junction, °C';
+    if (known.length) {
+      let lo = Math.min(...known), hi = Math.max(...known);
+      const pad = Math.max(0.5, (hi - lo) * 0.15); lo -= pad; hi += pad;
+      const step = niceStep((hi - lo) / 3), yT = v => tB - (tB - tT) * (v - lo) / (hi - lo);
+      for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) {
+        el('line', { x1: L, x2: W - R, y1: yT(v), y2: yT(v), stroke: COL.grid, 'stroke-width': 1 }, svg);
+        el('text', { x: L - 8, y: yT(v) + 3.5, 'text-anchor': 'end', 'font-size': 10, fill: COL.ink2 }, svg).textContent = +v.toFixed(2);
+      }
+      let d = '';
+      rows.forEach((row, i) => { const v = T(row); if (v !== undefined) d += (d ? ' L' : 'M') + X(i).toFixed(1) + ',' + yT(v).toFixed(1); });
+      el('path', { d, fill: 'none', stroke: COL.heat, 'stroke-width': 1.6, opacity: 0.8 }, svg);
+      rows.forEach((row, i) => {
+        const v = T(row); if (v === undefined) return;
+        const isBest = row === best;
+        el('circle', { cx: X(i), cy: yT(v), r: isBest ? 5 : 3.2, fill: isBest ? '#fff0be' : COL.heat, stroke: '#0c1531', 'stroke-width': 1.5 }, svg);
+        if (isBest) {
+          // below the dot (the chosen drill sits at or near the lowest point), above it if there is no room
+          const yl = yT(v) + 17 <= tB + 12 ? yT(v) + 17 : yT(v) - 10;
+          const lab = el('text', { x: X(i), y: yl, 'text-anchor': i > n - 3 ? 'end' : i < 2 ? 'start' : 'middle', 'font-size': 10.5, fill: COL.ink }, svg);
+          lab.setAttribute('paint-order', 'stroke'); lab.setAttribute('stroke', '#0c1531'); lab.setAttribute('stroke-width', 4);
+          lab.textContent = `${v.toFixed(1)} °C`;
+        }
+      });
+    } else el('text', { x: (L + W - R) / 2, y: (tT + tB) / 2, 'text-anchor': 'middle', 'font-size': 11, fill: COL.ink2 }, svg).textContent = 'solving each drill…';
+    // bottom: array resistance
+    const maxR = Math.max(...rows.map(x => x.R)) * 1.1, yR = v => bB - (bB - bT) * v / maxR;
+    el('text', { x: L, y: bT - 8, 'font-size': 10, fill: COL.ink2 }, svg).textContent = 'array, K/W';
+    const stepR = niceStep(maxR / 2);
+    for (let v = stepR; v <= maxR + 1e-9; v += stepR) {
+      el('line', { x1: L, x2: W - R, y1: yR(v), y2: yR(v), stroke: COL.grid, 'stroke-width': 1 }, svg);
+      el('text', { x: L - 8, y: yR(v) + 3.5, 'text-anchor': 'end', 'font-size': 10, fill: COL.ink2 }, svg).textContent = +v.toFixed(3);
     }
-    el('text', { x: L, y: 11, 'font-size': 10, fill: COL.ink2 }, svg).textContent = 'K/W';
-    const n = rows.length, bw = (W - L - R) / n, w = Math.max(4, Math.min(28, bw - 6));
     const every = n > 12 ? 2 : 1;
     rows.forEach((row, i) => {
-      const cx = L + bw * (i + 0.5), isBest = row === best;
-      const top = y(row.R), h = y(0) - top, rad = Math.min(4, w / 2, h);
-      el('path', { d: `M${cx - w / 2},${y(0)} V${top + rad} Q${cx - w / 2},${top} ${cx - w / 2 + rad},${top} H${cx + w / 2 - rad} Q${cx + w / 2},${top} ${cx + w / 2},${top + rad} V${y(0)} Z`,
+      const cx = X(i), isBest = row === best, top = yR(row.R), h = bB - top, rad = Math.min(3, w / 2, h);
+      el('path', { d: `M${cx - w / 2},${bB} V${top + rad} Q${cx - w / 2},${top} ${cx - w / 2 + rad},${top} H${cx + w / 2 - rad} Q${cx + w / 2},${top} ${cx + w / 2},${top + rad} V${bB} Z`,
         fill: isBest ? COL.barBest : COL.bar }, svg);
+      // x labels: drill, and the array below it where the count changes
       if (i % every === 0 || isBest)
-        el('text', { x: cx, y: H - B + 15, 'text-anchor': 'middle', 'font-size': 10, fill: isBest ? COL.ink : COL.ink2 }, svg).textContent = (row.d * 1e3).toFixed(2);
-      if (isBest) {
-        const nb = rows.slice(Math.max(0, i - 2), i + 3).map(x => y(x.R));
-        const ly = Math.max(T - 4, Math.min(...nb) - 8);
-        el('text', { x: cx, y: ly, 'text-anchor': 'middle', 'font-size': 10.5, fill: COL.ink }, svg).textContent = `${row.R.toFixed(2)} K/W · ${row.m}×${row.n}`;
-        if (ly < top - 8) el('line', { x1: cx, x2: cx, y1: ly + 4, y2: top - 3, stroke: COL.ink2, 'stroke-width': 1 }, svg);
-      }
-      const hit = el('rect', { x: cx - bw / 2, y: T, width: bw, height: H - T - B, fill: 'transparent' }, svg);
+        el('text', { x: cx, y: xl, 'text-anchor': 'middle', 'font-size': 10, fill: isBest ? COL.ink : COL.ink2 }, svg).textContent = (row.d * 1e3).toFixed(2);
+      if (i === 0 || rows[i - 1].N !== row.N)
+        el('text', { x: cx, y: xl + 15, 'text-anchor': 'middle', 'font-size': 10, fill: isBest ? COL.ink : COL.ink2 }, svg).textContent = `${row.m}×${row.n}`;
+      const hit = el('rect', { x: cx - bw / 2, y: tT - 10, width: bw, height: bB - tT + 10, fill: 'transparent' }, svg);
       const enter = () => {
+        const v = T(row), vb = T(best);
         tip.hidden = false;
-        tip.innerHTML = `<b>${(row.d * 1e3).toFixed(2)} mm drill</b><br><span>pitch</span> ${(row.pitch * 1e3).toFixed(2)} mm<br>` +
-          `<span>vias</span> ${row.m} × ${row.n} = ${row.N}<br><span>array</span> ${row.R.toFixed(2)} K/W${isBest ? '<br><span>best</span>' : ''}`;
-        const box = svg.getBoundingClientRect(), s = box.width / W;
-        tip.style.left = (cx * s) + 'px'; tip.style.top = (top * s) + 'px';
+        tip.innerHTML = `<b>${(row.d * 1e3).toFixed(2)} mm drill</b>${isBest ? ' <span>· chosen</span>' : ''}<br><span>pitch</span> ${(row.pitch * 1e3).toFixed(2)} mm<br>` +
+          `<span>vias</span> ${row.m} × ${row.n} = ${row.N}<br><span>array</span> ${row.R.toFixed(2)} K/W` +
+          (v !== undefined ? `<br><span>junction</span> ${v.toFixed(1)} °C` + (!isBest && vb !== undefined ? ` <span>(${v - vb >= 0 ? '+' : '−'}${Math.abs(v - vb).toFixed(2)} K)</span>` : '') : '');
+        const box = svg.getBoundingClientRect(), sc = box.width / W;
+        tip.style.left = (cx * sc) + 'px'; tip.style.top = ((v !== undefined ? tT : bT) * sc) + 'px';
       };
       hit.addEventListener('pointerenter', enter);
       hit.addEventListener('pointerleave', () => { tip.hidden = true; });
     });
-    el('line', { x1: L, x2: W - R, y1: y(0), y2: y(0), stroke: COL.ink2, 'stroke-width': 1 }, svg);
-    el('text', { x: (L + W - R) / 2, y: H - 2, 'text-anchor': 'middle', 'font-size': 10, fill: COL.ink2 }, svg).textContent = 'drill, mm';
+    el('line', { x1: L, x2: W - R, y1: bB, y2: bB, stroke: COL.ink2, 'stroke-width': 1 }, svg);
+    el('text', { x: W - R, y: H - 2, 'text-anchor': 'end', 'font-size': 10, fill: COL.ink2 }, svg).textContent = 'drill, mm · vias';
+  }
+  // Why this drill: the pitch rule, the copper per area, the whole-row steps, and what it is worth.
+  function why(r) {
+    const b = r.opt.best, s = r.cases[r.selected], o = s.o, f = x => (x * 1e3).toFixed(2), rows = r.opt.rows;
+    const c = b.pitch - b.d, ringRule = 2 * o.ring + (o.padGap || 0) >= o.hole2hole;
+    const parts = [];
+    parts.push(`Pitch = drill + ${f(c)} mm here (${ringRule ? `two annular rings of ${f(o.ring)} mm` : `the ${f(o.hole2hole)} mm hole-to-hole rule`}).`);
+    if (o.via === 'cufill') parts.push(`A filled via conducts through its whole section, so copper per area grows with the drill: the largest drill that keeps the row count wins.`);
+    else {
+      const dStar = c + 2 * o.plating;
+      parts.push(`A plated via conducts through its barrel, so copper per area goes as (d − t)/(d + ${f(c)})², highest at d = ${f(dStar)} mm; smaller drills do not help.`);
+    }
+    const i = rows.indexOf(b), nxt = rows[i + 1];
+    parts.push(`Only whole rows fit the ${(o.arrW * 1e3).toFixed(1)} × ${(o.arrH * 1e3).toFixed(1)} mm pad, which makes the curve saw-toothed: Ø${f(b.d)} gives ${b.m} × ${b.n}` +
+      (nxt && nxt.N < b.N ? `, and the next drill drops to ${nxt.m} × ${nxt.n}.` : '.'));
+    if (drillRows && !drillRows.partial) {
+      const ts = drillRows.rows.map(x => x.Tj), lo = Math.min(...ts), hi = Math.max(...ts);
+      parts.push(`Across all drills the junction moves by ${(hi - lo).toFixed(1)} K (${(100 * (hi - lo) / (s.Tj - o.Tamb)).toFixed(0)} % of the rise).`);
+    }
+    $('tv-why').textContent = parts.join(' ');
   }
   function niceStep(x) {
     const p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p;
@@ -257,6 +334,16 @@
     el('rect', { x: bx0, y: yb, width: bx1 - bx0, height: tB / 2, fill: 'url(#tv-gu)' }, svg);
     el('rect', { x: bx0, y: yb + tB / 2, width: bx1 - bx0, height: tB / 2, fill: 'url(#tv-gl)' }, svg);
     el('rect', { x: bx0, y: yb, width: bx1 - bx0, height: tB, fill: 'none', stroke: 'rgba(232,238,251,0.25)' }, svg);
+    // copper connected to the array on each face, to scale
+    const cuSpan = m => {
+      if (m === 'plane') return [bx0, bx1];
+      const e = (m === 'margin' ? o.cuMargin : 0) * mm;
+      return [cx - (o.arrW * mm / 2 + e) * kx, cx + (o.arrW * mm / 2 + e) * kx];
+    };
+    for (const [m, y] of [[up ? o.cuComp : o.cuFree, yb], [up ? o.cuFree : o.cuComp, ybb - 2.5]]) {
+      const [a0, a1] = cuSpan(m);
+      el('rect', { x: a0, y, width: a1 - a0, height: 2.5, fill: COL.cu, opacity: m === 'plane' ? 0.75 : 1 }, svg);
+    }
 
     // array and vias to scale (every via of the centre row)
     const a = s.arr, aw = o.arrW * mm * kx, ax0 = cx - aw / 2;
@@ -619,6 +706,14 @@
     x.setLineDash([4, 3]); x.strokeStyle = 'rgba(169,192,234,0.95)'; x.lineWidth = 1.2;
     x.strokeRect(X(cxm - o.arrW * mm / 2), Y(cym + o.arrH * mm / 2), o.arrW * mm * k, o.arrH * mm * k);
     x.setLineDash([]);
+    // edge of the copper connected to the array, when it does not cover the board
+    const cu = comp ? o.cuComp : o.cuFree;
+    if (cu !== 'plane') {
+      const e = cu === 'margin' ? o.cuMargin * mm : 0;
+      x.strokeStyle = 'rgba(232,170,100,0.95)'; x.lineWidth = 1.5;
+      x.strokeRect(X(cxm - o.arrW * mm / 2 - e), Y(cym + o.arrH * mm / 2 + e), (o.arrW * mm + 2 * e) * k, (o.arrH * mm + 2 * e) * k);
+    }
+    cv.parentElement.querySelector('figcaption').textContent = `${comp ? 'Component side' : 'Free side'} · copper ${cuName(cu, o)}`;
   }
   function readMap(e, comp) {
     if (!mapState) return;

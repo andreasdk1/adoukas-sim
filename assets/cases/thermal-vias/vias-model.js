@@ -1,8 +1,15 @@
 // Thermal via array under a component, in a small passively cooled enclosure.
 //
-// Board: two conducting sheets (the component side and the free side), each
-// copper pour + half the FR4 in plane, with the inner planes lumped into the
-// nearer sheet. The sheets are coupled through the thickness by FR4 everywhere
+// Board: conducting sheets through the thickness: the component side and the
+// free side (each its copper, with the inner planes lumped into the nearer one)
+// and, between them, the FR4 split into nz sub-layers (vertex-centred: nz - 1
+// interior sheets, the surface sheets carry half a sub-layer each). The
+// interior sheets matter when the copper is limited: then the laminate carries
+// the heat sideways, and the heat has to cross into it first. The copper connected to the array is set per side: the pad
+// only, the pad plus a margin, or a plane over the board (at the pour
+// coverage). Copper of other nets is not counted: across a clearance gap it
+// passes little heat (see model/gap_study.py), so outside the connected copper
+// a sheet conducts through its FR4 only. The sheets are coupled through the thickness by FR4 everywhere
 // and, inside the array, by the via barrels and their fill (smeared over the
 // array cells). The component covers its footprint on its own side: its power
 // enters the pad through R_jb, and part leaves through its own top (R_jt) to
@@ -23,7 +30,9 @@
 // radiation; the air inside cannot flow through.
 //
 // The steady problem is linear for fixed h; it is solved with Jacobi-
-// preconditioned conjugate gradients inside a Picard loop on h(T).
+// preconditioned conjugate gradients inside a Picard loop on h(T). Related
+// solves (the cases of one comparison, successive inputs) start from the last
+// solution.
 (function (root) {
   'use strict';
 
@@ -49,15 +58,17 @@
     // board
     boardW: 50e-3, boardH: 40e-3, tb: 1.6e-3,
     layers: 2, outerOz: 1, innerOz: 0.5, coverage: 0.7,
+    // copper connected to the array, per side: 'pad', 'margin' (pad + cuMargin all round) or 'plane'
+    cuComp: 'pad', cuFree: 'plane', cuMargin: 3e-3, cuInner: 'plane',
     finishEps: 0.1,
     // component
-    P: 2.0, bodyW: 6e-3, bodyH: 6e-3, bodyT: 0.9e-3, Rjb: 2.5, Rjt: 20,
+    P: 1.5, bodyW: 6e-3, bodyH: 6e-3, bodyT: 0.9e-3, Rjb: 2.5, Rjt: 20,
     side: 'top',            // component on the upper ('top') or lower ('bottom') face
     via: 'tented',
     // enclosure and cooling
     enclosure: true, gapUp: 30e-3, gapDn: 10e-3, hExt: 10,
     Tamb: 25, fan: 0,
-    grid: 0.5e-3,
+    grid: 0.5e-3, nz: 4,
   };
 
   // --------------------------------------------------------------- air layer
@@ -139,27 +150,55 @@
     return (ox * oy) / ((x1 - x0) * (y1 - y0));
   }
 
-  function solve(opts, arr) {
+  // init: an earlier solution of the same board (same grid) to start from
+  function solve(opts, arr, init) {
     const o = { ...DEFAULTS, ...opts };
     if (!arr) arr = optimise(o).best;
     const nx = Math.max(10, Math.round(o.boardW / o.grid)), ny = Math.max(10, Math.round(o.boardH / o.grid));
     const dx = o.boardW / nx, dy = o.boardH / ny, Ac = dx * dy, nc = nx * ny;
     const cx = o.boardW / 2, cy = o.boardH / 2;
 
-    // sheet conductances (W/K per square): component side c, free side f
-    const tOut = o.outerOz * OZ, tIn = o.innerOz * OZ, nIn = Math.max(0, o.layers - 2);
-    const kt = K_CU * o.coverage * (tOut + tIn * nIn / 2) + K_FR4_XY * o.tb / 2;
-    const gx = kt * dy / dx, gy = kt * dx / dy;
-
     // per-cell geometry fractions
     const fArr = new Float64Array(nc), fBody = new Float64Array(nc);
+    const cuC = new Float64Array(nc), cuF = new Float64Array(nc);     // connected copper fraction, outer layers
+    const rect = mode => (mode === 'margin' ? [o.arrW + 2 * o.cuMargin, o.arrH + 2 * o.cuMargin] : [o.arrW, o.arrH]);
+    const [wC, hC] = rect(o.cuComp), [wF, hF] = rect(o.cuFree);
     for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
       const x0 = i * dx, y0 = j * dy, c = j * nx + i;
       fArr[c] = coverFrac(x0, x0 + dx, y0, y0 + dy, o.arrW, o.arrH, cx, cy);
       fBody[c] = coverFrac(x0, x0 + dx, y0, y0 + dy, Math.max(o.bodyW, o.arrW), Math.max(o.bodyH, o.arrH), cx, cy);
+      const a = coverFrac(x0, x0 + dx, y0, y0 + dy, wC, hC, cx, cy), b = coverFrac(x0, x0 + dx, y0, y0 + dy, wF, hF, cx, cy);
+      cuC[c] = o.cuComp === 'plane' ? a + (1 - a) * o.coverage : a;
+      cuF[c] = o.cuFree === 'plane' ? b + (1 - b) * o.coverage : b;
+    }
+
+    // sheet conductance (W/K per square) per cell, and per cell face (harmonic mean)
+    const tOut = o.outerOz * OZ, tIn = o.innerOz * OZ, nIn = Math.max(0, o.layers - 2);
+    const kIn = o.cuInner === 'plane' ? K_CU * o.coverage * tIn * nIn / 2 : 0;
+    const nz = Math.max(1, Math.round(o.nz)), nMid = nz - 1;
+    const tFr4 = o.tb - 2 * tOut - nIn * tIn;                 // laminate between the copper layers
+    const kFr4 = K_FR4_XY * tFr4 / (2 * nz), kMid = K_FR4_XY * tFr4 / nz;
+    const gxM = kMid * dy / dx, gyM = kMid * dx / dy;
+    // offset of sheet s (0 component side, nz free side, between: the FR4 interior sheets)
+    const off = sh => (sh === 0 ? 0 : sh === nz ? nc : (1 + sh) * nc);
+    const ktC = new Float64Array(nc), ktF = new Float64Array(nc);
+    for (let c = 0; c < nc; c++) { ktC[c] = kFr4 + kIn + K_CU * tOut * cuC[c]; ktF[c] = kFr4 + kIn + K_CU * tOut * cuF[c]; }
+    const hm = (a, b) => 2 * a * b / (a + b);
+    const gEC = new Float64Array(nc), gNC = new Float64Array(nc), gEF = new Float64Array(nc), gNF = new Float64Array(nc);
+    const latC = new Float64Array(nc), latF = new Float64Array(nc);
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const c = j * nx + i;
+      if (i < nx - 1) {
+        gEC[c] = hm(ktC[c], ktC[c + 1]) * dy / dx; gEF[c] = hm(ktF[c], ktF[c + 1]) * dy / dx;
+        latC[c] += gEC[c]; latC[c + 1] += gEC[c]; latF[c] += gEF[c]; latF[c + 1] += gEF[c];
+      }
+      if (j < ny - 1) {
+        gNC[c] = hm(ktC[c], ktC[c + nx]) * dx / dy; gNF[c] = hm(ktF[c], ktF[c + nx]) * dx / dy;
+        latC[c] += gNC[c]; latC[c + nx] += gNC[c]; latF[c] += gNF[c]; latF[c + nx] += gNF[c];
+      }
     }
     const Aarr = o.arrW * o.arrH;
-    const gzFr4 = K_FR4_Z * Ac / o.tb;                       // per cell, no vias
+    const gzFr4 = K_FR4_Z * Ac / tFr4;                       // per cell, no vias
     const gzArr = arr ? arr.G / Aarr * Ac : gzFr4;           // per cell, full array
     // free-side surface of the array area
     const r = arr ? arr.d / 2 : 0, ri = arr ? Math.max(r - o.plating, 0) : 0;
@@ -182,8 +221,8 @@
     const Awall = o.boardW * o.boardH, per = 2 * (o.boardW + o.boardH);
     const AwC = Awall + per * gapC, AwF = Awall + per * gapF;
 
-    // unknowns: [0..nc) component sheet, [nc..2nc) free sheet, J, K(pkg top), WC, WF
-    const n = 2 * nc + 4, iJ = 2 * nc, iK = iJ + 1, iWC = iJ + 2, iWF = iJ + 3;
+    // unknowns: [0..nc) component sheet, [nc..2nc) free sheet, then the nz - 1 interior sheets, J, K(pkg top), WC, WF
+    const n = (2 + nMid) * nc + 4, iJ = (2 + nMid) * nc, iK = iJ + 1, iWC = iJ + 2, iWF = iJ + 3;
     const T = new Float64Array(n).fill(Tamb);
     const hcC = new Float64Array(nc), hrC = new Float64Array(nc), hcF = new Float64Array(nc), hrF = new Float64Array(nc);
     const epsF = new Float64Array(nc);
@@ -221,13 +260,14 @@
     }
 
     // Matrix-free operator: the structure is a fixed 5-point stencil per sheet plus
-    // the through-thickness link, the junction, the package top and the two walls.
+    // the through-thickness links (between neighbouring sheets, 1/nz of the thickness,
+    // so nz times the full-thickness conductance), the junction, the package top and the walls.
     const gzc = new Float64Array(nc), jl = new Float64Array(nc);
     let sumArr = 0;
     for (let c = 0; c < nc; c++) sumArr += fArr[c];
     let jlSum = 0;
     for (let c = 0; c < nc; c++) {
-      gzc[c] = fArr[c] * gzArr + (1 - fArr[c]) * gzFr4;
+      gzc[c] = nz * (fArr[c] * gzArr + (1 - fArr[c]) * gzFr4);
       jl[c] = fArr[c] / sumArr / o.Rjb; jlSum += jl[c];
     }
     const gWC = new Float64Array(nc), gWF = new Float64Array(nc), gAC = new Float64Array(nc), gAF = new Float64Array(nc);
@@ -242,9 +282,10 @@
         const cC = hcC[c] * Ac, rC = hrC[c] * Ac, cF = hcF[c] * Ac, rF = hrF[c] * Ac;
         gWC[c] = (convToWall ? cC : 0) + (conf ? rC : 0); gAC[c] = (convToWall ? 0 : cC) + (conf ? 0 : rC);
         gWF[c] = (convToWall ? cF : 0) + (conf ? rF : 0); gAF[c] = (convToWall ? 0 : cF) + (conf ? 0 : rF);
-        const lat = gx * ((i > 0) + (i < nx - 1)) + gy * ((j > 0) + (j < ny - 1));
-        diag[c] = lat + gzc[c] + gWC[c] + gAC[c] + jl[c]; rhs[c] = gAC[c] * Tamb;
-        diag[nc + c] = lat + gzc[c] + gWF[c] + gAF[c]; rhs[nc + c] = gAF[c] * Tamb;
+        diag[c] = latC[c] + gzc[c] + gWC[c] + gAC[c] + jl[c]; rhs[c] = gAC[c] * Tamb;
+        diag[nc + c] = latF[c] + gzc[c] + gWF[c] + gAF[c]; rhs[nc + c] = gAF[c] * Tamb;
+        const latM = gxM * ((i > 0) + (i < nx - 1)) + gyM * ((j > 0) + (j < ny - 1));
+        for (let sh = 1; sh < nz; sh++) { diag[off(sh) + c] = latM + 2 * gzc[c]; rhs[off(sh) + c] = 0; }
         sWC += gWC[c]; sWF += gWF[c];
       }
       pW = (convToWall ? hpC : 0) + (conf ? hpR : 0); pA = (convToWall ? 0 : hpC) + (conf ? 0 : hpR);
@@ -260,13 +301,22 @@
       for (let j = 0; j < ny; j++) {
         const r0 = j * nx;
         for (let i = 0; i < nx; i++) {
-          const c = r0 + i, f = nc + c, xc = x[c], xf = x[f];
-          let a = diag[c] * xc - gzc[c] * xf - gWC[c] * xWC - jl[c] * xJ;
-          let b = diag[f] * xf - gzc[c] * xc - gWF[c] * xWF;
-          if (i > 0) { a -= gx * x[c - 1]; b -= gx * x[f - 1]; }
-          if (i < nx - 1) { a -= gx * x[c + 1]; b -= gx * x[f + 1]; }
-          if (j > 0) { a -= gy * x[c - nx]; b -= gy * x[f - nx]; }
-          if (j < ny - 1) { a -= gy * x[c + nx]; b -= gy * x[f + nx]; }
+          const c = r0 + i, f = nc + c, xc = x[c], xf = x[f], g = gzc[c];
+          let a = diag[c] * xc - g * x[off(1) + c] - gWC[c] * xWC - jl[c] * xJ;
+          let b = diag[f] * xf - g * x[off(nz - 1) + c] - gWF[c] * xWF;
+          for (let sh = 1; sh < nz; sh++) {
+            const m = off(sh) + c;
+            let e = diag[m] * x[m] - g * (x[off(sh - 1) + c] + x[off(sh + 1) + c]);
+            if (i > 0) e -= gxM * x[m - 1];
+            if (i < nx - 1) e -= gxM * x[m + 1];
+            if (j > 0) e -= gyM * x[m - nx];
+            if (j < ny - 1) e -= gyM * x[m + nx];
+            y[m] = e;
+          }
+          if (i > 0) { a -= gEC[c - 1] * x[c - 1]; b -= gEF[c - 1] * x[f - 1]; }
+          if (i < nx - 1) { a -= gEC[c] * x[c + 1]; b -= gEF[c] * x[f + 1]; }
+          if (j > 0) { a -= gNC[c - nx] * x[c - nx]; b -= gNF[c - nx] * x[f - nx]; }
+          if (j < ny - 1) { a -= gNC[c] * x[c + nx]; b -= gNF[c] * x[f + nx]; }
           y[c] = a; y[f] = b;
           sWC += gWC[c] * xc; sWF += gWF[c] * xf; sJ += jl[c] * xc;
         }
@@ -303,8 +353,8 @@
 
     let outer = 0, cgIts = 0;
     // initial guess: a rough lumped estimate so the first h values are sensible
-    for (let a = 0; a < n; a++) T[a] = Tamb + 5;
-    T[iJ] = Tamb + 20;
+    if (init && init.length === n) T.set(init);
+    else { for (let a = 0; a < n; a++) T[a] = Tamb + 5; T[iJ] = Tamb + 20; }
     for (; outer < 60; outer++) {
       updateH();
       build();
@@ -329,9 +379,9 @@
       flow.compRad += hrC[c] * Ac * (tc - TwC);
       const qc = hcF[c] * Ac * (tf - TaF), qr = hrF[c] * Ac * (tf - TwF);
       qConvC[c] = hcC[c] * (tc - TaC); qRadC[c] = hrC[c] * (tc - TwC);
-      qConvF[c] = qc / Ac; qRadF[c] = qr / Ac; qZ[c] = gzc[c] * (tc - tf) / Ac;
+      qConvF[c] = qc / Ac; qRadF[c] = qr / Ac; qZ[c] = gzc[c] / nz * (tc - tf) / Ac;   // mean of the sub-layer links
       flow.freeConv += qc; flow.freeRad += qr;
-      const dz = tc - tf;
+      const dz = tc - tf;                  // g·(tc − tf) is the mean of the sub-layer link flows
       if (fArr[c] > 0) {
         const a = fArr[c];
         // split the free-side loss of the array cells by area / emissivity
@@ -360,24 +410,32 @@
       o, arr, nx, ny, dx, dy,
       Tcomp: Float64Array.from(T.subarray(0, nc), C),
       Tfree: Float64Array.from(T.subarray(nc, 2 * nc), C),
-      fArr, fBody, qConvC, qRadC, qConvF, qRadF, qZ,
+      fArr, fBody, cuC, cuF, qConvC, qRadC, qConvF, qRadF, qZ,
       Tj: C(T[iJ]), Tpad: C(padMean), TfreeArr: C(TfreeArr), Tpkg: C(T[iK]), TwallC: C(TwC), TwallF: C(TwF),
       Tmax: C(Math.max(Tmax, T[iJ])),
-      Pboard, Ptop, flow, outer, cgIts,
+      Pboard, Ptop, flow, outer, cgIts, converged: outer < 60,
       holeFrac, padOpen, epsArrFree,
+      state: T,
       balance: o.P - (flow.compConv + flow.compRad + flow.freeConv + flow.freeRad + hpC * (T[iK] - TaC) + hpR * (T[iK] - TwC)),
     };
   }
 
   // The four cases the question is about (tented / open x component up / down),
   // plus the selected case when its via treatment is neither.
-  function compare(opts, onPartial) {
+  // cache (optional): { state } kept by the caller between calls; seeds the first solve
+  function compare(opts, onPartial, cache) {
     const o = { ...DEFAULTS, ...opts };
     const opt = optimise(o);
     const out = {};
     const selected = o.side + '_' + o.via;
     if (!opt.best) return { opt, cases: out, selected: null };
-    const one = (side, via) => { const oo = { ...o, side, via }; out[side + '_' + via] = solve(oo, arrayConductance(opt.best.d, oo)); };
+    let init = cache && cache.state || null;
+    const one = (side, via) => {
+      const oo = { ...o, side, via }, s = solve(oo, arrayConductance(opt.best.d, oo), init);
+      init = s.state; delete s.state;
+      out[side + '_' + via] = s;
+      if (cache && side === o.side && via === o.via) cache.state = init;
+    };
     // the selected case first, so a caller can show it while the rest solve
     one(o.side, o.via);
     if (onPartial) onPartial({ opt, cases: { ...out }, selected, partial: true });
@@ -388,11 +446,27 @@
     const oo = { ...o, via: 'tented' };
     const none = { ...arrayConductance(opt.best.d, oo), N: 0, Gbarrel: 0, Gfill: 0 };
     none.Gfr4 = K_FR4_Z * o.arrW * o.arrH / o.tb; none.G = none.Gfr4; none.R = 1 / none.G;
-    out.noVias = solve(oo, none);
+    out.noVias = solve(oo, none, init);
+    delete out.noVias.state;
     return { opt, cases: out, selected };
   }
 
-  const api = { DEFAULTS, FILL, viaConductance, layout, arrayConductance, drillCandidates, optimise, solve, compare,
+  // Junction temperature of the selected case for each drill (most vias of that drill in
+  // the pad). Returns a stepper: each call solves one drill and returns its row, or null
+  // when done, so a caller can interleave it with other work. Starts from cache.state.
+  function drillSweep(opts, cache) {
+    const o = { ...DEFAULTS, ...opts };
+    const rows = optimise(o).rows;
+    let k = 0, init = cache && cache.state || null;
+    return () => {
+      if (k >= rows.length) return null;
+      const a = rows[k++], s = solve(o, a, init);
+      init = s.state;
+      return { d: a.d, pitch: a.pitch, m: a.m, n: a.n, N: a.N, R: a.R, Tj: s.Tj, i: k - 1, of: rows.length };
+    };
+  }
+
+  const api = { DEFAULTS, FILL, viaConductance, layout, arrayConductance, drillCandidates, optimise, solve, compare, drillSweep,
     hUp, hDn, hForced, hRad, consts: { K_CU, K_FR4_Z, K_AIR, EPS_MASK, EPS_HOLE, T_MASK, K_MASK } };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ViaModel = api;

@@ -111,6 +111,11 @@
         },
         Ac,
       };
+      // copper connected to the array on each face: half extents (mm) and how far it spreads heat
+      const ext = m => (m === 'plane' ? [W / 2, H / 2] : m === 'margin' ? [g.arrW / 2 + o.cuMargin * mm, g.arrH / 2 + o.cuMargin * mm] : [g.arrW / 2, g.arrH / 2]);
+      const reach = { plane: 1, margin: 0.5, pad: 0.05 };
+      g.cuC = { mode: o.cuComp, ext: ext(o.cuComp) }; g.cuF = { mode: o.cuFree, ext: ext(o.cuFree) };
+      g.spreadC = reach[o.cuComp] / (reach[o.cuComp] + reach[o.cuFree]);
       g.rate = {
         convU: g.src.convU.total * Ac, radU: g.src.radU.total * Ac, convL: g.src.convL.total * Ac, radL: g.src.radL.total * Ac,
         pkg: Math.max(0, s.Ptop), spread: Math.max(0, s.Pboard),
@@ -319,10 +324,14 @@
         const b = g.body, zt = g.up ? g.zU + g.bodyT : g.zL - g.bodyT;
         parts.push({ k: g.up ? 'cu' : 'cl', x: (Math.random() - 0.5) * b, y: (Math.random() - 0.5) * b, z: zt, t: 0, life: 2.4, T: g.s.Tpkg, ph: Math.random() * 6.3 });
       });
-      // spreading through the copper, outwards from the pad on the component side
+      // spreading through the copper, outwards from the pad, on the face(s) whose copper spreads it;
+      // a dot stops at the edge of the connected copper
       emit(R.spread * 0.8, () => {
-        const ang = Math.random() * 6.283, r0 = g.body * 0.55;
-        parts.push({ k: 'sp', x: Math.cos(ang) * r0, y: Math.sin(ang) * r0, z: g.up ? g.zU + 0.05 : g.zL - 0.05, vx: Math.cos(ang), vy: Math.sin(ang), t: 0, life: 1.2 + Math.random() * 0.8, T: g.hi });
+        const comp = Math.random() < g.spreadC, cu = comp ? g.cuC : g.cuF;
+        const ang = Math.random() * 6.283, r0 = comp ? g.body * 0.55 : Math.max(g.arrW, g.arrH) * 0.5;
+        const onUpper = comp === g.up, z = onUpper ? g.zU + 0.05 : g.zL - 0.05;
+        parts.push({ k: 'sp', x: Math.cos(ang) * r0, y: Math.sin(ang) * r0, z, vx: Math.cos(ang), vy: Math.sin(ang), t: 0, life: 1.2 + Math.random() * 0.8, T: g.hi,
+          ex: Math.max(cu.ext[0], r0 * 1.02), ey: Math.max(cu.ext[1], r0 * 1.02) });
       });
     }
     // radiation: a diffuse (grey, Lambertian) surface emits over the whole hemisphere with
@@ -365,6 +374,7 @@
         } else if (p.k === 'sp') {
           const v = 10 * (1 - p.t / p.life);
           p.x += p.vx * v * dt; p.y += p.vy * v * dt;
+          if (Math.abs(p.x) > p.ex || Math.abs(p.y) > p.ey) continue;
         }
         if (p.k !== 'r' && (Math.abs(p.x) > g.W / 2 || Math.abs(p.y) > g.H / 2)) { if (p.k !== 'cu' && p.k !== 'cl' || g.enc) continue; }
         out.push(p);
@@ -471,6 +481,12 @@
         const rH = Math.max(0.02, g.viaD / 2 - g.plating);
         ctx.fillStyle = g.o.via === 'cufill' ? 'rgba(170,110,60,1)' : g.o.via === 'plugged' ? 'rgba(120,120,130,1)' : '#05080f';
         for (const [x, y] of g.vias) { ctx.beginPath(); ctx.arc(x, y, rH, 0, 6.283); ctx.fill(); }
+      }
+      // edge of the copper connected to the array, when it does not cover the board
+      const cu = freeSide ? g.cuF : g.cuC;
+      if (cu.mode !== 'plane') {
+        ctx.lineWidth = 0.16; ctx.strokeStyle = 'rgba(232,170,100,0.95)';
+        ctx.strokeRect(-cu.ext[0], -cu.ext[1], 2 * cu.ext[0], 2 * cu.ext[1]);
       }
       // array outline and vias on the free side
       if (freeSide && g.vias.length) {
